@@ -1,32 +1,58 @@
-# Atomic Commit Skill
+---
+name: atomic-commit
+description: >
+  Breaks a large set of uncommitted changes into clean, atomic, conventional Git
+  commits. Use when I ask to "commit this atomically", run /atomic-commit, or have
+  a messy working tree that mixes several logical changes. Plans the split, gets
+  my approval, then commits group by group.
+---
 
-This skill provides a structured workflow for breaking down a large set of changes into clean, atomic, and logical Git commits.
+# Atomic commit
 
-## Workflow
+Turn a messy working tree into a sequence of atomic commits — one logical change
+each. This skill plans and executes the split; it does not invent a commit
+convention (see "Convention" below).
 
-When the user asks for an atomic commit or uses the `/atomic-commit` command, follow these steps:
+## 1. Analyze
 
-### 1. Analysis
-- Run `git status` to see which files are modified.
-- Run `git diff` (or use `read_file` on modified files) to understand the semantic changes.
-- Identify logical groups of changes (e.g., "Refactor: extracted component", "Fix: corrected API endpoint", "Style: updated buttons").
+- `git status` to list modified/untracked files.
+- `git diff` (and `git diff --staged` if anything is already staged) to read the
+  ACTUAL semantic changes, not just filenames.
+- Group changes by logical intent: e.g. a bug fix, an unrelated refactor, a style
+  tweak. A single file may belong to MORE THAN ONE group — watch for this.
 
-### 2. Planning
-- Propose a plan to the user.
-- List each proposed commit with:
-    - The **type** (feat, fix, refactor, docs, chore, etc.).
-    - A **short description** (imperative mood, "why" over "what").
-    - The **list of files** included in that commit.
+## 2. Plan (show me before doing anything)
 
-### 3. Execution (After User Approval)
-- For each approved commit in the plan:
-    1. Stage only the relevant files: `git add <files>`.
-    2. Create the commit: `git commit -m "<type>: <description>"`.
-    3. Verify success with `git status`.
+Present the proposed commits. For each:
+- The conventional **type(scope)** and a one-line description (imperative, "why"
+  over "what").
+- The files — and, when a file is split across commits, WHICH part of it.
+Wait for my approval before executing. Adjust if I push back.
+
+## 3. Execute (only after approval)
+
+For each approved commit, in order:
+1. Stage exactly what belongs to it:
+   - File belongs wholly to one commit -> `git add <file>`.
+   - File mixes changes for several commits -> stage only the relevant parts.
+     The clean way is `git add -p <file>` (hunk-by-hunk: `y`/`n`, and `s` to
+     split a hunk that glues two changes together). Claude can't drive the
+     interactive `-p` prompt itself, so for mixed files: tell me which hunks go
+     where and let me run `git add -p`, OR stage precise line ranges
+     non-interactively if feasible. NEVER lump a mixed file into one commit just
+     because per-file staging is easier.
+2. `git commit -m "<type>(<scope>): <description>"` (scope optional).
+3. `git status` to confirm the commit landed and see what remains.
 
 ## Standards
-- **Conventional Commits**: Strictly follow the format `<type>: <description>`.
-- **Atomicity**: Never mix unrelated changes (e.g., don't mix a bug fix with a new feature).
-- **Imperative**: "add", not "added" or "adds".
-- **No Global Add**: Do not use `git add .` unless the entire diff belongs to a single logical change.
-- **No Co-Author**: Never add co-author field on the commit.
+
+- **Atomicity is the whole point**: never mix unrelated changes in one commit
+  (no "fix bug + add feature" commits). When a file mixes concerns, split at the
+  hunk level — do not let per-file convenience defeat atomicity.
+- **No blanket `git add .`** unless the entire diff is genuinely one logical change.
+- **Convention**: follow the project's commit convention (the git workflow in
+  CLAUDE.md / the project's rules). Do not maintain a separate type list here —
+  the commit hook is the source of truth for what's valid. Imperative, lowercase,
+  no trailing period.
+- **No co-author trailer.**
+- Never `git push` unless I explicitly ask.
