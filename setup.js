@@ -4,7 +4,7 @@ const path = require('path');
 const readline = require('readline');
 const { execSync } = require('child_process');
 
-const REPO = "szerookii/claude-code-stack";
+const REPO = "sowahq/claude-code-stack";
 const BRANCH = "main";
 const RAW_URL = `https://raw.githubusercontent.com/${REPO}/${BRANCH}`;
 const API_URL = `https://api.github.com/repos/${REPO}/contents`;

@@ -8,7 +8,7 @@ You can initialize any project with this setup using a single command.
 
 ### Node.js (18+)
 ```bash
-node -e "fetch('https://raw.githubusercontent.com/szerookii/claude-code-stack/main/setup.js').then(r=>r.text()).then(eval)"
+node -e "fetch('https://raw.githubusercontent.com/sowahq/claude-code-stack/main/setup.js').then(r=>r.text()).then(eval)"
 ```
 
 ### 🌍 Project vs Global Install
