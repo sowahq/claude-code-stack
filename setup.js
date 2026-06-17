@@ -71,23 +71,23 @@ async function select(msg, opts, multi = false) {
     });
 }
 
-function manifestPath(target) { return path.join(target, MANIFEST_NAME); }
+function manifestPath(dir) { return path.join(dir, MANIFEST_NAME); }
 
-function readManifest(target) {
+function readManifest(dir) {
     try {
-        const p = manifestPath(target);
+        const p = manifestPath(dir);
         if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf8'));
     } catch (e) { log.warn(`Could not read manifest: ${e.message}`); }
     return null;
 }
 
-function writeManifest(target, data) {
-    fs.writeFileSync(manifestPath(target), JSON.stringify(data, null, 2));
+function writeManifest(dir, data) {
+    fs.writeFileSync(manifestPath(dir), JSON.stringify(data, null, 2));
 }
 
-function injectClaudeImport(target) {
+function injectClaudeImport(target, importPath) {
     const claudeMd = path.join(target, "CLAUDE.md");
-    const block = `${BLOCK_BEGIN}\n@${STACK_MD_NAME}\n${BLOCK_END}\n`;
+    const block = `${BLOCK_BEGIN}\n@${importPath}\n${BLOCK_END}\n`;
     if (!fs.existsSync(claudeMd)) {
         fs.writeFileSync(claudeMd, block);
         return true;
@@ -118,8 +118,8 @@ function claudeMdHasStackBlock(target) {
     try { return fs.readFileSync(claudeMd, 'utf8').includes(BLOCK_BEGIN); } catch (e) { return false; }
 }
 
-function stackInstalled(target) {
-    return fs.existsSync(manifestPath(target)) || claudeMdHasStackBlock(target);
+function stackInstalled(target, claudeBase) {
+    return fs.existsSync(manifestPath(claudeBase)) || claudeMdHasStackBlock(target);
 }
 
 function deepMergeSettings(base, add) {
@@ -187,9 +187,9 @@ function removeMcpServers(names, scope, cwd) {
     }
 }
 
-async function uninstallStack(target, mcpScope) {
+async function uninstallStack(target, claudeBase, mcpScope) {
     log.step("Uninstalling...");
-    const manifest = readManifest(target);
+    const manifest = readManifest(claudeBase);
     if (!manifest) {
         log.warn("No stack manifest found. Nothing tracked to remove safely.");
         return;
@@ -225,7 +225,7 @@ async function uninstallStack(target, mcpScope) {
         }
     }
     removeMcpServers(manifest.mcp || [], manifest.mcpScope || mcpScope);
-    fs.rmSync(manifestPath(target), { force: true });
+    fs.rmSync(manifestPath(claudeBase), { force: true });
     log.info("Critical base config (your CLAUDE.md, settings.json, unmanaged files) left untouched.");
     log.info("Global tools (rtk, caveman, etc.) are not removed.");
     log.success("Uninstall complete!");
@@ -249,17 +249,19 @@ async function setup() {
     }
 
     const mcpScope = isGlobal ? "user" : "project";
+    const claudeBase = isGlobal ? target : path.join(target, ".claude");
+    const importPath = isGlobal ? STACK_MD_NAME : `.claude/${STACK_MD_NAME}`;
 
-    if (stackInstalled(target)) {
+    if (stackInstalled(target, claudeBase)) {
         const action = await select("Stack already installed here. What would you like to do?", ["Reapply/Update", "Uninstall", "Cancel"]);
         if (action === "Cancel") process.exit(0);
         if (action === "Uninstall") {
-            if (fs.existsSync(manifestPath(target))) {
-                await uninstallStack(target, mcpScope);
+            if (fs.existsSync(manifestPath(claudeBase))) {
+                await uninstallStack(target, claudeBase, mcpScope);
             } else {
                 log.step("Uninstalling (no manifest, using CLAUDE.md marker)...");
                 removeClaudeImport(target, false);
-                const smd = path.join(target, STACK_MD_NAME);
+                const smd = path.join(claudeBase, STACK_MD_NAME);
                 if (fs.existsSync(smd)) { fs.rmSync(smd, { force: true }); log.success(`Removed ${STACK_MD_NAME}`); }
                 removeMcpServers(MCP_SERVERS.map(s => s.name), mcpScope, target);
                 log.warn("No manifest: removed stack block + import only. Rules/skills not tracked — remove manually if needed.");
@@ -412,7 +414,7 @@ async function setup() {
         return false;
     };
 
-    const prevManifest = readManifest(target);
+    const prevManifest = readManifest(claudeBase);
     const owned = new Set(prevManifest && prevManifest.files ? prevManifest.files : []);
     const installedFiles = [];
     let claudeImport = prevManifest ? !!prevManifest.claudeImport : false;
@@ -430,13 +432,13 @@ async function setup() {
         return ok;
     };
 
-    const claudeBase = isGlobal ? target : path.join(target, ".claude");
-
-    if (await get(`${RAW_URL}/CLAUDE.md`, path.join(target, STACK_MD_NAME))) {
-        if (!installedFiles.includes(STACK_MD_NAME)) installedFiles.push(STACK_MD_NAME);
-        createdClaudeMd = injectClaudeImport(target);
+    const stackMdDest = path.join(claudeBase, STACK_MD_NAME);
+    if (await get(`${RAW_URL}/CLAUDE.md`, stackMdDest)) {
+        const stackMdRel = relTo(stackMdDest);
+        if (!installedFiles.includes(stackMdRel)) installedFiles.push(stackMdRel);
+        createdClaudeMd = injectClaudeImport(target, importPath);
         claudeImport = true;
-        log.success(`CLAUDE.md (imported via @${STACK_MD_NAME}, your CLAUDE.md preserved)`);
+        log.success(`CLAUDE.md (imported via @${importPath}, your CLAUDE.md preserved)`);
     }
 
     for (const r of selectedRules) {
@@ -498,8 +500,8 @@ async function setup() {
     }
     const mergedDirs = Array.from(dirSet).sort((a, b) => b.split('/').length - a.split('/').length);
     const mergedMcp = Array.from(new Set([...(prevManifest && prevManifest.mcp || []), ...addedMcp]));
-    writeManifest(target, { scope: isGlobal ? "global" : "project", version: 1, files: mergedFiles, dirs: mergedDirs, mcp: mergedMcp, mcpScope, settings: settingsRecord, claudeImport, createdClaudeMd });
-    log.success("Wrote manifest (.claude-code-stack-manifest.json) for clean uninstall");
+    writeManifest(claudeBase, { scope: isGlobal ? "global" : "project", version: 1, files: mergedFiles, dirs: mergedDirs, mcp: mergedMcp, mcpScope, settings: settingsRecord, claudeImport, createdClaudeMd });
+    log.success(`Wrote manifest (${relTo(manifestPath(claudeBase))}) for clean uninstall`);
 
     console.log(`\n${C.bold}${C.green}✨ Setup complete!${C.rst}\n`);
     process.exit(0);

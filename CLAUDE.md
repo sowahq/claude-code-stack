@@ -19,5 +19,6 @@
 
 # Engineering Standards
 - **Quality**: No shortcuts, no mocks in production-ready code.
+- **No Code Comments**: NEVER write inline/explanatory comments in code. Code must be self-documenting through clear naming and structure. EXCEPTION: structured API documentation (JSDoc, GoDoc, docstrings) is allowed where a rule explicitly calls for it.
 - **Validation**: Every task must include tests or verification logic.
 - **Safety**: Ask before destructive operations.
