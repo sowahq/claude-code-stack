@@ -177,8 +177,8 @@ function removeMcpServers(names, scope, cwd) {
     }
 }
 
-async function uninstallGlobal(target) {
-    log.step("Uninstalling (global)...");
+async function uninstallStack(target, mcpScope) {
+    log.step("Uninstalling...");
     const manifest = readManifest(target);
     if (!manifest) {
         log.warn("No stack manifest found. Nothing tracked to remove safely.");
@@ -200,7 +200,7 @@ async function uninstallGlobal(target) {
         log.success("Removed stack block from CLAUDE.md");
     }
     if (manifest.settings) {
-        const settingsPath = path.join(target, "settings.json");
+        const settingsPath = path.join(target, manifest.settings.rel || "settings.json");
         const cur = fs.existsSync(settingsPath) ? fs.readFileSync(settingsPath, 'utf8') : null;
         if (cur !== null && cur === manifest.settings.wrote) {
             if (manifest.settings.existed) {
@@ -214,11 +214,11 @@ async function uninstallGlobal(target) {
             log.warn("settings.json changed since install; left as-is (remove stack keys manually if desired).");
         }
     }
-    removeMcpServers(manifest.mcp || [], "user");
+    removeMcpServers(manifest.mcp || [], manifest.mcpScope || mcpScope);
     fs.rmSync(manifestPath(target), { force: true });
-    log.info("Critical base config (settings.json, your CLAUDE.md, RTK.md) left untouched.");
+    log.info("Critical base config (your CLAUDE.md, settings.json, unmanaged files) left untouched.");
     log.info("Global tools (rtk, caveman, etc.) are not removed.");
-    log.success("Global uninstall complete!");
+    log.success("Uninstall complete!");
 }
 
 async function setup() {
@@ -238,20 +238,19 @@ async function setup() {
         target = path.resolve((await ask("Target directory path (default: .)")) || ".");
     }
 
-    const isExisting = isGlobal
-        ? fs.existsSync(manifestPath(target))
-        : (fs.existsSync(path.join(target, "CLAUDE.md")) || fs.existsSync(path.join(target, ".claude")));
+    const mcpScope = isGlobal ? "user" : "project";
+    const hasManifest = fs.existsSync(manifestPath(target));
+    const legacyProject = !isGlobal && !hasManifest && (fs.existsSync(path.join(target, "CLAUDE.md")) || fs.existsSync(path.join(target, ".claude")));
 
-    if (isExisting) {
+    if (hasManifest || legacyProject) {
         const action = await select("Existing installation detected. What would you like to do?", ["Reapply/Update", "Uninstall", "Cancel"]);
         if (action === "Cancel") process.exit(0);
         if (action === "Uninstall") {
-            if (isGlobal) {
-                await uninstallGlobal(target);
+            if (hasManifest) {
+                await uninstallStack(target, mcpScope);
             } else {
-                log.step("Uninstalling...");
-                const filesToRemove = ["CLAUDE.md", ".claude/rules", ".claude/skills"];
-                for (const f of filesToRemove) {
+                log.step("Uninstalling (legacy, no manifest)...");
+                for (const f of ["CLAUDE.md", ".claude/rules", ".claude/skills"]) {
                     const p = path.join(target, f);
                     if (fs.existsSync(p)) {
                         fs.rmSync(p, { recursive: true, force: true });
@@ -409,40 +408,35 @@ async function setup() {
         return false;
     };
 
-    const prevManifest = isGlobal ? readManifest(target) : null;
+    const prevManifest = readManifest(target);
     const owned = new Set(prevManifest && prevManifest.files ? prevManifest.files : []);
     const installedFiles = [];
     let claudeImport = prevManifest ? !!prevManifest.claudeImport : false;
     let createdClaudeMd = prevManifest ? !!prevManifest.createdClaudeMd : false;
 
-    const safeGet = async (src, dest, rel) => {
-        if (isGlobal && fs.existsSync(dest) && !owned.has(rel)) {
+    const relTo = (dest) => path.relative(target, dest).split(path.sep).join('/');
+    const safeGet = async (src, dest) => {
+        const rel = relTo(dest);
+        if (fs.existsSync(dest) && !owned.has(rel)) {
             log.warn(`Skipped ${rel} (already exists, not managed by stack)`);
             return false;
         }
         const ok = await get(src, dest);
-        if (ok && isGlobal && !installedFiles.includes(rel)) installedFiles.push(rel);
+        if (ok && !installedFiles.includes(rel)) installedFiles.push(rel);
         return ok;
     };
 
     const claudeBase = isGlobal ? target : path.join(target, ".claude");
 
-    if (isGlobal) {
-        if (await get(`${RAW_URL}/CLAUDE.md`, path.join(target, STACK_MD_NAME))) {
-            if (!installedFiles.includes(STACK_MD_NAME)) installedFiles.push(STACK_MD_NAME);
-            createdClaudeMd = injectClaudeImport(target);
-            claudeImport = true;
-            log.success(`CLAUDE.md (imported via @${STACK_MD_NAME}, base config preserved)`);
-        }
-    } else {
-        if (await get(`${RAW_URL}/CLAUDE.md`, path.join(target, "CLAUDE.md"))) {
-            log.success("CLAUDE.md");
-        }
+    if (await get(`${RAW_URL}/CLAUDE.md`, path.join(target, STACK_MD_NAME))) {
+        if (!installedFiles.includes(STACK_MD_NAME)) installedFiles.push(STACK_MD_NAME);
+        createdClaudeMd = injectClaudeImport(target);
+        claudeImport = true;
+        log.success(`CLAUDE.md (imported via @${STACK_MD_NAME}, your CLAUDE.md preserved)`);
     }
 
     for (const r of selectedRules) {
-        const rel = path.posix.join("rules", `${r}.md`);
-        if (await safeGet(`${RAW_URL}/.claude/rules/${r}.md`, path.join(claudeBase, "rules", `${r}.md`), rel)) {
+        if (await safeGet(`${RAW_URL}/.claude/rules/${r}.md`, path.join(claudeBase, "rules", `${r}.md`))) {
             log.success(`Rule: ${r}`);
         }
     }
@@ -451,9 +445,9 @@ async function setup() {
         const skillFiles = await listFilesRecursive(`.claude/skills/${s}`);
         let count = 0;
         for (const repoPath of skillFiles) {
-            const rel = repoPath.replace(/^\.claude\//, "");
-            const dest = path.join(claudeBase, ...rel.split('/'));
-            if (await safeGet(`${RAW_URL}/${repoPath}`, dest, rel)) count++;
+            const sub = repoPath.replace(/^\.claude\//, "");
+            const dest = path.join(claudeBase, ...sub.split('/'));
+            if (await safeGet(`${RAW_URL}/${repoPath}`, dest)) count++;
         }
         if (count > 0) log.success(`Skill: ${s} (${count} file${count === 1 ? '' : 's'})`);
     }
@@ -477,11 +471,9 @@ async function setup() {
                     const parent = path.dirname(settingsPath);
                     if (!fs.existsSync(parent)) fs.mkdirSync(parent, { recursive: true });
                     fs.writeFileSync(settingsPath, wrote);
-                    if (isGlobal) {
-                        const basePrior = settingsRecord ? settingsRecord.prior : prior;
-                        const baseExisted = settingsRecord ? settingsRecord.existed : (prior !== null);
-                        settingsRecord = { existed: baseExisted, prior: basePrior, wrote };
-                    }
+                    const basePrior = settingsRecord ? settingsRecord.prior : prior;
+                    const baseExisted = settingsRecord ? settingsRecord.existed : (prior !== null);
+                    settingsRecord = { existed: baseExisted, prior: basePrior, wrote, rel: relTo(settingsPath) };
                     log.success(prior === null ? "settings.json (created)" : "settings.json (merged, your values preserved)");
                 }
             }
@@ -491,21 +483,19 @@ async function setup() {
     let addedMcp = [];
     if (selectedMcp.length > 0) {
         log.step("Configuring MCP Servers");
-        addedMcp = addMcpServers(selectedMcp, isGlobal ? "user" : "project", target);
+        addedMcp = addMcpServers(selectedMcp, mcpScope, target);
     }
 
-    if (isGlobal) {
-        const mergedFiles = Array.from(new Set([...(prevManifest && prevManifest.files || []), ...installedFiles]));
-        const dirSet = new Set();
-        for (const f of mergedFiles) {
-            const parts = f.split('/');
-            for (let i = parts.length - 1; i >= 1; i--) dirSet.add(parts.slice(0, i).join('/'));
-        }
-        const mergedDirs = Array.from(dirSet).sort((a, b) => b.split('/').length - a.split('/').length);
-        const mergedMcp = Array.from(new Set([...(prevManifest && prevManifest.mcp || []), ...addedMcp]));
-        writeManifest(target, { scope: "global", version: 1, files: mergedFiles, dirs: mergedDirs, mcp: mergedMcp, settings: settingsRecord, claudeImport, createdClaudeMd });
-        log.success("Wrote manifest (.claude-code-stack-manifest.json) for clean uninstall");
+    const mergedFiles = Array.from(new Set([...(prevManifest && prevManifest.files || []), ...installedFiles]));
+    const dirSet = new Set();
+    for (const f of mergedFiles) {
+        const parts = f.split('/');
+        for (let i = parts.length - 1; i >= 1; i--) dirSet.add(parts.slice(0, i).join('/'));
     }
+    const mergedDirs = Array.from(dirSet).sort((a, b) => b.split('/').length - a.split('/').length);
+    const mergedMcp = Array.from(new Set([...(prevManifest && prevManifest.mcp || []), ...addedMcp]));
+    writeManifest(target, { scope: isGlobal ? "global" : "project", version: 1, files: mergedFiles, dirs: mergedDirs, mcp: mergedMcp, mcpScope, settings: settingsRecord, claudeImport, createdClaudeMd });
+    log.success("Wrote manifest (.claude-code-stack-manifest.json) for clean uninstall");
 
     console.log(`\n${C.bold}${C.green}✨ Setup complete!${C.rst}\n`);
     process.exit(0);

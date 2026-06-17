@@ -12,9 +12,9 @@ node -e "fetch('https://raw.githubusercontent.com/szerookii/claude-code-stack/ma
 ```
 
 ### 🌍 Project vs Global Install
-The installer first asks where to install:
-- **Project** — writes `CLAUDE.md` + `.claude/` into the target directory (current behaviour).
-- **Global (`~/.claude`)** — applies to all projects **without overwriting your base config**. Your existing `~/.claude/CLAUDE.md`, `RTK.md` and `settings.json` are never touched: the stack instructions are written to `~/.claude/claude-code-stack.md` and pulled in via a managed `@`-import block. Rules/skills that already exist and aren't managed by the stack are skipped. Everything installed is tracked in `~/.claude/.claude-code-stack-manifest.json` for a clean, reversible uninstall.
+The installer first asks where to install. **Both scopes are non-destructive** — nothing you already have is overwritten:
+- **Project** — installs into the target directory. Your existing `CLAUDE.md` is preserved (stack instructions go to `claude-code-stack.md`, pulled in via a managed `@`-import block); pre-existing rules/skills that the stack doesn't manage are skipped; `settings.json` is deep-merged. Everything is tracked in `.claude-code-stack-manifest.json` for a clean, reversible uninstall.
+- **Global (`~/.claude`)** — same guarantees, applied to all projects. Your `~/.claude/CLAUDE.md`, `RTK.md` and `settings.json` are never clobbered.
 
 ### 🔌 MCP Servers
 The installer can optionally wire MCP servers into Claude Code (`user` scope for global, `project` scope otherwise):
