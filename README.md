@@ -22,6 +22,9 @@ The installer can optionally wire MCP servers into Claude Code (`user` scope for
 
 Already-configured servers are auto-detected (by package id, regardless of the name you gave them) and skipped, so it never prompts to re-add something you already have.
 
+### ⚙️ Recommended settings.json
+The installer can optionally apply a recommended `settings.json` (French language, no commit/PR attribution, `.env`/`secrets` read-denied). It is **deep-merged**: existing scalar values you already set are kept, `permissions` arrays are unioned and de-duplicated — nothing you configured is overwritten. On global uninstall the original `settings.json` is restored exactly (or removed if the stack created it), unless you changed it since install.
+
 ### 🔄 Update or Uninstall
 To update your rules/skills or uninstall the stack, simply run the command above again. The installer detects the existing installation (via the manifest for global installs) and offers to **Reapply/Update** or **Uninstall**. Global uninstall removes only stack-managed files, the `@`-import block, and stack MCP servers — your base config stays intact.
 
@@ -42,7 +45,7 @@ This setup automates the repetitive parts of project initialization:
 
 This configuration transforms Claude into an orchestrator:
 
-1. **Strategic Delegation**: Research is handled by `codebase_investigator`, and batch tasks (3+ files) by the `generalist` sub-agent.
+1. **Strategic Delegation**: Research, codebase investigation, and batch tasks (3+ files) are delegated to subagents — Claude picks whichever available agent best fits, keeping the main context lean.
 2. **On-Demand Skills**: Custom skills like `/atomic-commit` are loaded only when needed to save context.
 3. **Context Sync**: Uses `cavemem` to maintain facts and decisions across sessions.
 

@@ -1,6 +1,6 @@
 # Agentic Architecture & Orchestration
 - **Strategic Orchestration**: Act as a senior orchestrator. Keep your context window lean and decision-making sharp.
-- **Delegation**: Use `codebase_investigator` for research and `generalist` for batch tasks (3+ files).
+- **Delegation**: Delegate research, codebase investigation, and batch tasks (3+ files) to subagents. Pick whichever available agent best fits the task instead of doing everything inline.
 - **Persistence**: Use `cavemem` to sync context across agents.
 - **Skills**: Use custom skills from `.claude/skills` for specific workflows (e.g., `atomic-commit`).
 
