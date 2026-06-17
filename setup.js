@@ -112,6 +112,16 @@ function removeClaudeImport(target, createdByUs) {
 
 function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
+function claudeMdHasStackBlock(target) {
+    const claudeMd = path.join(target, "CLAUDE.md");
+    if (!fs.existsSync(claudeMd)) return false;
+    try { return fs.readFileSync(claudeMd, 'utf8').includes(BLOCK_BEGIN); } catch (e) { return false; }
+}
+
+function stackInstalled(target) {
+    return fs.existsSync(manifestPath(target)) || claudeMdHasStackBlock(target);
+}
+
 function deepMergeSettings(base, add) {
     const out = { ...base };
     for (const k of Object.keys(add)) {
@@ -239,26 +249,20 @@ async function setup() {
     }
 
     const mcpScope = isGlobal ? "user" : "project";
-    const hasManifest = fs.existsSync(manifestPath(target));
-    const legacyProject = !isGlobal && !hasManifest && (fs.existsSync(path.join(target, "CLAUDE.md")) || fs.existsSync(path.join(target, ".claude")));
 
-    if (hasManifest || legacyProject) {
-        const action = await select("Existing installation detected. What would you like to do?", ["Reapply/Update", "Uninstall", "Cancel"]);
+    if (stackInstalled(target)) {
+        const action = await select("Stack already installed here. What would you like to do?", ["Reapply/Update", "Uninstall", "Cancel"]);
         if (action === "Cancel") process.exit(0);
         if (action === "Uninstall") {
-            if (hasManifest) {
+            if (fs.existsSync(manifestPath(target))) {
                 await uninstallStack(target, mcpScope);
             } else {
-                log.step("Uninstalling (legacy, no manifest)...");
-                for (const f of ["CLAUDE.md", ".claude/rules", ".claude/skills"]) {
-                    const p = path.join(target, f);
-                    if (fs.existsSync(p)) {
-                        fs.rmSync(p, { recursive: true, force: true });
-                        log.success(`Removed ${f}`);
-                    }
-                }
-                removeMcpServers(MCP_SERVERS.map(s => s.name), "project", target);
-                log.info("Note: Global tools (rtk, caveman, etc.) are not removed.");
+                log.step("Uninstalling (no manifest, using CLAUDE.md marker)...");
+                removeClaudeImport(target, false);
+                const smd = path.join(target, STACK_MD_NAME);
+                if (fs.existsSync(smd)) { fs.rmSync(smd, { force: true }); log.success(`Removed ${STACK_MD_NAME}`); }
+                removeMcpServers(MCP_SERVERS.map(s => s.name), mcpScope, target);
+                log.warn("No manifest: removed stack block + import only. Rules/skills not tracked — remove manually if needed.");
                 log.success("Uninstall complete!");
             }
             process.exit(0);
