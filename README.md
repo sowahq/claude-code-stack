@@ -11,8 +11,19 @@ You can initialize any project with this setup using a single command.
 node -e "fetch('https://raw.githubusercontent.com/szerookii/claude-code-stack/main/setup.js').then(r=>r.text()).then(eval)"
 ```
 
+### 🌍 Project vs Global Install
+The installer first asks where to install:
+- **Project** — writes `CLAUDE.md` + `.claude/` into the target directory (current behaviour).
+- **Global (`~/.claude`)** — applies to all projects **without overwriting your base config**. Your existing `~/.claude/CLAUDE.md`, `RTK.md` and `settings.json` are never touched: the stack instructions are written to `~/.claude/claude-code-stack.md` and pulled in via a managed `@`-import block. Rules/skills that already exist and aren't managed by the stack are skipped. Everything installed is tracked in `~/.claude/.claude-code-stack-manifest.json` for a clean, reversible uninstall.
+
+### 🔌 MCP Servers
+The installer can optionally wire MCP servers into Claude Code (`user` scope for global, `project` scope otherwise):
+- **Svelte** (`@sveltejs/mcp`), **Ark UI** (`@ark-ui/mcp`), **Figma** (`@vkhanhqui/figma-mcp-go`), **Todoist** (HTTP, `https://ai.todoist.net/mcp` — authenticate via `/mcp` after install).
+
+Already-configured servers are auto-detected (by package id, regardless of the name you gave them) and skipped, so it never prompts to re-add something you already have.
+
 ### 🔄 Update or Uninstall
-To update your rules/skills or uninstall the stack from a project, simply run the command above again. The installer will detect the existing installation and offer to **Reapply/Update** or **Uninstall**.
+To update your rules/skills or uninstall the stack, simply run the command above again. The installer detects the existing installation (via the manifest for global installs) and offers to **Reapply/Update** or **Uninstall**. Global uninstall removes only stack-managed files, the `@`-import block, and stack MCP servers — your base config stays intact.
 
 ## 🎯 Main Features
 

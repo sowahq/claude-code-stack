@@ -1,4 +1,5 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const readline = require('readline');
 const { execSync } = require('child_process');
@@ -7,6 +8,19 @@ const REPO = "szerookii/claude-code-stack";
 const BRANCH = "main";
 const RAW_URL = `https://raw.githubusercontent.com/${REPO}/${BRANCH}`;
 const API_URL = `https://api.github.com/repos/${REPO}/contents`;
+
+const GLOBAL_DIR = path.join(os.homedir(), ".claude");
+const MANIFEST_NAME = ".claude-code-stack-manifest.json";
+const STACK_MD_NAME = "claude-code-stack.md";
+const BLOCK_BEGIN = "<!-- BEGIN claude-code-stack (managed, do not edit) -->";
+const BLOCK_END = "<!-- END claude-code-stack -->";
+
+const MCP_SERVERS = [
+    { name: "svelte", label: "Svelte — SvelteKit docs & autofixer", transport: "stdio", cmd: "npx -y @sveltejs/mcp", match: "@sveltejs/mcp" },
+    { name: "ark-ui", label: "Ark UI — component API & examples", transport: "stdio", cmd: "npx -y @ark-ui/mcp", match: "@ark-ui/mcp" },
+    { name: "figma-mcp-go", label: "Figma (figma-mcp-go) — design data via Figma Desktop bridge", transport: "stdio", cmd: "npx -y @vkhanhqui/figma-mcp-go@latest", match: "@vkhanhqui/figma-mcp-go" },
+    { name: "todoist", label: "Todoist — tasks & projects (HTTP, needs auth)", transport: "http", url: "https://ai.todoist.net/mcp", match: "ai.todoist.net/mcp" },
+];
 
 const C = { rst: '\x1b[0m', dim: '\x1b[2m', bold: '\x1b[1m', cyan: '\x1b[36m', green: '\x1b[32m', yellow: '\x1b[33m', red: '\x1b[31m' };
 const log = {
@@ -57,27 +71,167 @@ async function select(msg, opts, multi = false) {
     });
 }
 
+function manifestPath(target) { return path.join(target, MANIFEST_NAME); }
+
+function readManifest(target) {
+    try {
+        const p = manifestPath(target);
+        if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf8'));
+    } catch (e) { log.warn(`Could not read manifest: ${e.message}`); }
+    return null;
+}
+
+function writeManifest(target, data) {
+    fs.writeFileSync(manifestPath(target), JSON.stringify(data, null, 2));
+}
+
+function injectClaudeImport(target) {
+    const claudeMd = path.join(target, "CLAUDE.md");
+    const block = `${BLOCK_BEGIN}\n@${STACK_MD_NAME}\n${BLOCK_END}\n`;
+    if (!fs.existsSync(claudeMd)) {
+        fs.writeFileSync(claudeMd, block);
+        return true;
+    }
+    let content = fs.readFileSync(claudeMd, 'utf8');
+    const re = new RegExp(`${escapeRe(BLOCK_BEGIN)}[\\s\\S]*?${escapeRe(BLOCK_END)}\\n?`);
+    if (re.test(content)) content = content.replace(re, block);
+    else content = content.replace(/\s*$/, '\n') + "\n" + block;
+    fs.writeFileSync(claudeMd, content);
+    return false;
+}
+
+function removeClaudeImport(target, createdByUs) {
+    const claudeMd = path.join(target, "CLAUDE.md");
+    if (!fs.existsSync(claudeMd)) return;
+    let content = fs.readFileSync(claudeMd, 'utf8');
+    const re = new RegExp(`\\n?${escapeRe(BLOCK_BEGIN)}[\\s\\S]*?${escapeRe(BLOCK_END)}\\n?`);
+    content = content.replace(re, '\n');
+    if (createdByUs && content.trim() === '') fs.rmSync(claudeMd, { force: true });
+    else fs.writeFileSync(claudeMd, content.replace(/\n{3,}/g, '\n\n'));
+}
+
+function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+function detectConfiguredMcp(cwd) {
+    const present = new Set();
+    if (!isInstalled('claude -v')) return present;
+    let out = "";
+    try { out = execSync('claude mcp list', { encoding: 'utf8', cwd, stdio: ['ignore', 'pipe', 'ignore'] }); }
+    catch (e) { return present; }
+    for (const def of MCP_SERVERS) {
+        if (out.includes(def.match)) present.add(def.name);
+    }
+    return present;
+}
+
+function mcpAddCommand(def, scope) {
+    if (def.transport === "http") {
+        return `claude mcp add --transport http ${def.name} ${def.url} --scope ${scope}`;
+    }
+    return `claude mcp add ${def.name} --scope ${scope} -- ${def.cmd}`;
+}
+
+function addMcpServers(names, scope, cwd) {
+    const added = [];
+    if (!isInstalled('claude -v')) {
+        log.warn("Claude Code CLI not found; skipping MCP setup.");
+        return added;
+    }
+    for (const name of names) {
+        const def = MCP_SERVERS.find(s => s.name === name);
+        if (!def) continue;
+        try { execSync(`claude mcp remove ${name} --scope ${scope}`, { stdio: 'ignore', cwd }); } catch (e) {}
+        try {
+            execSync(mcpAddCommand(def, scope), { stdio: 'ignore', cwd });
+            log.success(`MCP: ${name} (${scope} scope${def.transport === 'http' ? ', authenticate with /mcp in Claude Code' : ''})`);
+            added.push(name);
+        } catch (e) {
+            log.error(`Failed to add MCP server ${name}`);
+        }
+    }
+    return added;
+}
+
+function removeMcpServers(names, scope, cwd) {
+    if (!names || !names.length || !isInstalled('claude -v')) return;
+    for (const name of names) {
+        try {
+            execSync(`claude mcp remove ${name} --scope ${scope}`, { stdio: 'ignore', cwd });
+            log.success(`Removed MCP: ${name}`);
+        } catch (e) {}
+    }
+}
+
+async function uninstallGlobal(target) {
+    log.step("Uninstalling (global)...");
+    const manifest = readManifest(target);
+    if (!manifest) {
+        log.warn("No stack manifest found. Nothing tracked to remove safely.");
+        return;
+    }
+    for (const rel of (manifest.files || [])) {
+        const p = path.join(target, rel);
+        if (fs.existsSync(p)) {
+            fs.rmSync(p, { recursive: true, force: true });
+            log.success(`Removed ${rel}`);
+        }
+    }
+    for (const dir of (manifest.dirs || [])) {
+        const p = path.join(target, dir);
+        try { if (fs.existsSync(p) && fs.readdirSync(p).length === 0) fs.rmdirSync(p); } catch (e) {}
+    }
+    if (manifest.claudeImport) {
+        removeClaudeImport(target, manifest.createdClaudeMd);
+        log.success("Removed stack block from CLAUDE.md");
+    }
+    removeMcpServers(manifest.mcp || [], "user");
+    fs.rmSync(manifestPath(target), { force: true });
+    log.info("Critical base config (settings.json, your CLAUDE.md, RTK.md) left untouched.");
+    log.info("Global tools (rtk, caveman, etc.) are not removed.");
+    log.success("Global uninstall complete!");
+}
+
 async function setup() {
     console.log(`\n${C.bold}${C.cyan}⚡ Claude Code Stack Installer${C.rst}\n${C.dim}============================${C.rst}`);
-    
-    const target = path.resolve((await ask("Target directory path (default: .)")) || ".");
-    const isExisting = fs.existsSync(path.join(target, "CLAUDE.md")) || fs.existsSync(path.join(target, ".claude"));
+
+    const scope = await select("Where do you want to install the stack?", [
+        "Project (current/target directory)",
+        "Global (~/.claude — applies to all projects)",
+    ]);
+    const isGlobal = scope.startsWith("Global");
+
+    let target;
+    if (isGlobal) {
+        target = GLOBAL_DIR;
+        log.info(`Global target: ${C.dim}${target}${C.rst}`);
+    } else {
+        target = path.resolve((await ask("Target directory path (default: .)")) || ".");
+    }
+
+    const isExisting = isGlobal
+        ? fs.existsSync(manifestPath(target))
+        : (fs.existsSync(path.join(target, "CLAUDE.md")) || fs.existsSync(path.join(target, ".claude")));
 
     if (isExisting) {
         const action = await select("Existing installation detected. What would you like to do?", ["Reapply/Update", "Uninstall", "Cancel"]);
         if (action === "Cancel") process.exit(0);
         if (action === "Uninstall") {
-            log.step("Uninstalling...");
-            const filesToRemove = ["CLAUDE.md", ".claude/rules", ".claude/skills"];
-            for (const f of filesToRemove) {
-                const p = path.join(target, f);
-                if (fs.existsSync(p)) {
-                    fs.rmSync(p, { recursive: true, force: true });
-                    log.success(`Removed ${f}`);
+            if (isGlobal) {
+                await uninstallGlobal(target);
+            } else {
+                log.step("Uninstalling...");
+                const filesToRemove = ["CLAUDE.md", ".claude/rules", ".claude/skills"];
+                for (const f of filesToRemove) {
+                    const p = path.join(target, f);
+                    if (fs.existsSync(p)) {
+                        fs.rmSync(p, { recursive: true, force: true });
+                        log.success(`Removed ${f}`);
+                    }
                 }
+                removeMcpServers(MCP_SERVERS.map(s => s.name), "project", target);
+                log.info("Note: Global tools (rtk, caveman, etc.) are not removed.");
+                log.success("Uninstall complete!");
             }
-            log.info("Note: Global tools (rtk, caveman, etc.) are not removed.");
-            log.success("Uninstall complete!");
             process.exit(0);
         }
     }
@@ -117,7 +271,7 @@ async function setup() {
                  manager = await select("Choose your package manager:", ["npm", "pnpm", "yarn"]);
             }
             const cmd = manager === 'yarn' ? 'global add' : 'install -g';
-            
+
             const caveman = skills.find(s => s.name === 'caveman');
             if (caveman && !caveman.installed) {
                 log.info("Installing caveman...");
@@ -184,6 +338,19 @@ async function setup() {
     const selectedRules = await select("Select rules to install:", rules, true);
     const selectedSkills = await select("Select custom skills to install:", customSkills, true);
 
+    const configuredMcp = detectConfiguredMcp(target);
+    for (const s of MCP_SERVERS) {
+        if (configuredMcp.has(s.name)) log.success(`MCP already configured: ${s.name} (skipping)`);
+    }
+    const availableMcp = MCP_SERVERS.filter(s => !configuredMcp.has(s.name));
+    let selectedMcp = [];
+    if (availableMcp.length > 0) {
+        const selectedMcpLabels = await select("Select MCP servers to add:", availableMcp.map(s => s.label), true);
+        selectedMcp = availableMcp.filter(s => selectedMcpLabels.includes(s.label)).map(s => s.name);
+    } else {
+        log.info("All known MCP servers are already configured.");
+    }
+
     log.step("Applying Files");
     const get = async (src, dest) => {
         try {
@@ -200,20 +367,65 @@ async function setup() {
         return false;
     };
 
-    if (await get(`${RAW_URL}/CLAUDE.md`, path.join(target, "CLAUDE.md"))) {
-        log.success("CLAUDE.md");
+    const prevManifest = isGlobal ? readManifest(target) : null;
+    const owned = new Set(prevManifest && prevManifest.files ? prevManifest.files : []);
+    const installedFiles = [];
+    const installedDirs = [];
+    let claudeImport = prevManifest ? !!prevManifest.claudeImport : false;
+    let createdClaudeMd = prevManifest ? !!prevManifest.createdClaudeMd : false;
+
+    const safeGet = async (src, dest, rel) => {
+        if (isGlobal && fs.existsSync(dest) && !owned.has(rel)) {
+            log.warn(`Skipped ${rel} (already exists, not managed by stack)`);
+            return false;
+        }
+        const ok = await get(src, dest);
+        if (ok && isGlobal && !installedFiles.includes(rel)) installedFiles.push(rel);
+        return ok;
+    };
+
+    const claudeBase = isGlobal ? target : path.join(target, ".claude");
+
+    if (isGlobal) {
+        if (await get(`${RAW_URL}/CLAUDE.md`, path.join(target, STACK_MD_NAME))) {
+            if (!installedFiles.includes(STACK_MD_NAME)) installedFiles.push(STACK_MD_NAME);
+            createdClaudeMd = injectClaudeImport(target);
+            claudeImport = true;
+            log.success(`CLAUDE.md (imported via @${STACK_MD_NAME}, base config preserved)`);
+        }
+    } else {
+        if (await get(`${RAW_URL}/CLAUDE.md`, path.join(target, "CLAUDE.md"))) {
+            log.success("CLAUDE.md");
+        }
     }
 
     for (const r of selectedRules) {
-        if (await get(`${RAW_URL}/.claude/rules/${r}.md`, path.join(target, ".claude", "rules", `${r}.md`))) {
+        const rel = path.posix.join("rules", `${r}.md`);
+        if (await safeGet(`${RAW_URL}/.claude/rules/${r}.md`, path.join(claudeBase, "rules", `${r}.md`), rel)) {
             log.success(`Rule: ${r}`);
         }
     }
 
     for (const s of selectedSkills) {
-        if (await get(`${RAW_URL}/.claude/skills/${s}/SKILL.md`, path.join(target, ".claude", "skills", s, "SKILL.md"))) {
+        const rel = path.posix.join("skills", s, "SKILL.md");
+        if (await safeGet(`${RAW_URL}/.claude/skills/${s}/SKILL.md`, path.join(claudeBase, "skills", s, "SKILL.md"), rel)) {
+            if (isGlobal && !installedDirs.includes(path.posix.join("skills", s))) installedDirs.push(path.posix.join("skills", s));
             log.success(`Skill: ${s}`);
         }
+    }
+
+    let addedMcp = [];
+    if (selectedMcp.length > 0) {
+        log.step("Configuring MCP Servers");
+        addedMcp = addMcpServers(selectedMcp, isGlobal ? "user" : "project", target);
+    }
+
+    if (isGlobal) {
+        const mergedFiles = Array.from(new Set([...(prevManifest && prevManifest.files || []), ...installedFiles]));
+        const mergedDirs = Array.from(new Set([...(prevManifest && prevManifest.dirs || []), ...installedDirs, "skills", "rules"]));
+        const mergedMcp = Array.from(new Set([...(prevManifest && prevManifest.mcp || []), ...addedMcp]));
+        writeManifest(target, { scope: "global", version: 1, files: mergedFiles, dirs: mergedDirs, mcp: mergedMcp, claudeImport, createdClaudeMd });
+        log.success("Wrote manifest (.claude-code-stack-manifest.json) for clean uninstall");
     }
 
     console.log(`\n${C.bold}${C.green}✨ Setup complete!${C.rst}\n`);
