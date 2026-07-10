@@ -5,7 +5,32 @@
   "includeGitInstructions": false,
   "spinnerTipsEnabled": false,
   "autoMemoryEnabled": true,
+  "outputStyle": "tui",
+  "teammateMode": "auto",
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
   "permissions": {
+    "allow": [
+      "Bash(go test *)",
+      "Bash(go vet *)",
+      "Bash(go doc *)",
+      "Bash(go build *)",
+      "Bash(go fmt *)",
+      "Bash(gofmt *)",
+      "Bash(cargo test *)",
+      "Bash(cargo clippy *)",
+      "Bash(cargo build *)",
+      "Bash(cargo fmt *)",
+      "Bash(cargo doc *)",
+      "Bash(rustfmt *)",
+      "Bash(docker build *)",
+      "Bash(npx prisma *)",
+      "Bash(npx drizzle-kit *)",
+      "Bash(npx svelte-check *)",
+      "Bash(npm run *)",
+      "Bash(pnpm *)"
+    ],
     "deny": [
       "Read(./.env)",
       "Read(./.env.*)",
