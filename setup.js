@@ -373,15 +373,21 @@ async function setup() {
         return files;
     };
 
-    log.info("Fetching rules & skills from GitHub...");
+    log.info("Fetching rules, skills, agents & hooks from GitHub...");
     const rulesData = await fetchItems(".claude/rules");
     const skillsData = await fetchItems(".claude/skills");
+    const agentsData = await fetchItems(".claude/agents");
+    const hooksData = await fetchItems(".claude/hooks");
 
     const rules = rulesData.filter(f => f.name.endsWith('.md')).map(f => f.name.replace('.md', ''));
     const customSkills = skillsData.filter(f => f.type === 'dir').map(f => f.name);
+    const agents = agentsData.filter(f => f.name.endsWith('.md')).map(f => f.name.replace('.md', ''));
+    const hookScripts = hooksData.filter(f => f.type === 'file').map(f => f.name);
 
-    const selectedRules = await select("Select rules to install:", rules, true);
-    const selectedSkills = await select("Select custom skills to install:", customSkills, true);
+    const selectedRules = rules.length ? await select("Select rules to install:", rules, true) : [];
+    const selectedSkills = customSkills.length ? await select("Select custom skills to install:", customSkills, true) : [];
+    const selectedAgents = agents.length ? await select("Select agents to install:", agents, true) : [];
+    const selectedHooks = hookScripts.length ? await select("Select hooks to install:", hookScripts, true) : [];
 
     const configuredMcp = detectConfiguredMcp(target);
     for (const s of MCP_SERVERS) {
@@ -445,6 +451,23 @@ async function setup() {
         if (await safeGet(`${RAW_URL}/.claude/rules/${r}.md`, path.join(claudeBase, "rules", `${r}.md`))) {
             log.success(`Rule: ${r}`);
         }
+    }
+
+    for (const a of selectedAgents) {
+        if (await safeGet(`${RAW_URL}/.claude/agents/${a}.md`, path.join(claudeBase, "agents", `${a}.md`))) {
+            log.success(`Agent: ${a}`);
+        }
+    }
+
+    for (const h of selectedHooks) {
+        const dest = path.join(claudeBase, "hooks", h);
+        if (await safeGet(`${RAW_URL}/.claude/hooks/${h}`, dest)) {
+            try { fs.chmodSync(dest, 0o755); } catch (e) { log.warn(`Could not chmod ${h}: ${e.message}`); }
+            log.success(`Hook: ${h}`);
+        }
+    }
+    if (isGlobal && selectedHooks.length && installSettings) {
+        log.warn("Global install: settings.json hook commands reference ${CLAUDE_PROJECT_DIR}/.claude/hooks — update them to ~/.claude/hooks manually.");
     }
 
     for (const s of selectedSkills) {
