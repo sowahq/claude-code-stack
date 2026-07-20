@@ -283,10 +283,11 @@ async function setup() {
     }
 
     log.step("Checking Skills & Plugins");
+    const hallmarkDir = path.join(GLOBAL_DIR, "skills", "hallmark");
     const skills = [
         { name: 'caveman', check: 'claude plugin list', installed: false },
         { name: 'cavemem', check: 'cavemem -v', installed: false },
-        { name: 'ui-ux-pro-max', check: 'uipro --version', installed: false }
+        { name: 'hallmark', checkFn: () => fs.existsSync(path.join(hallmarkDir, 'SKILL.md')), installed: false }
     ];
 
     if (isInstalled('cargo --version')) {
@@ -294,9 +295,23 @@ async function setup() {
     }
 
     for (let s of skills) {
-        s.installed = isInstalled(s.check);
+        s.installed = s.checkFn ? s.checkFn() : isInstalled(s.check);
         if (s.installed) log.success(`${s.name} is already installed`);
         else log.warn(`${s.name} is missing`);
+    }
+
+    if (isInstalled('uipro --version')) {
+        log.warn("ui-ux-pro-max detected (replaced by hallmark in this stack)");
+        if ((await ask("Uninstall ui-ux-pro-max? (y/n)")).toLowerCase() === 'y') {
+            try {
+                execSync(`${manager} ${manager === 'yarn' ? 'global remove' : 'uninstall -g'} uipro-cli`, { stdio: 'ignore' });
+                const uiproDir = path.join(GLOBAL_DIR, 'skills', 'ui-ux-pro-max');
+                if (fs.existsSync(uiproDir)) fs.rmSync(uiproDir, { recursive: true, force: true });
+                log.success("ui-ux-pro-max uninstalled");
+            } catch (e) {
+                log.error("Failed to uninstall uipro-cli — remove it manually");
+            }
+        }
     }
 
     const missingSkills = skills.filter(s => !s.installed).map(s => s.name);
@@ -328,12 +343,22 @@ async function setup() {
                 log.success("cavemem installed");
             }
 
-            const uipro = skills.find(s => s.name === 'ui-ux-pro-max');
-            if (uipro && !uipro.installed) {
-                log.info("Installing ui-ux-pro-max...");
-                execSync(`${manager} ${cmd} uipro-cli`, { stdio: 'ignore' });
-                try { execSync('uipro init --ai claude --global', { stdio: 'ignore' }); } catch(e) {}
-                log.success("ui-ux-pro-max installed");
+            const hallmark = skills.find(s => s.name === 'hallmark');
+            if (hallmark && !hallmark.installed) {
+                log.info("Installing hallmark...");
+                try {
+                    execSync('npx -y skills add nutlope/hallmark', { stdio: 'inherit' });
+                } catch (e) {
+                    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hallmark-'));
+                    try {
+                        execSync(`git clone --depth 1 https://github.com/Nutlope/hallmark "${tmp}"`, { stdio: 'ignore' });
+                        fs.cpSync(path.join(tmp, 'skills', 'hallmark'), hallmarkDir, { recursive: true });
+                    } finally {
+                        fs.rmSync(tmp, { recursive: true, force: true });
+                    }
+                }
+                if (fs.existsSync(path.join(hallmarkDir, 'SKILL.md'))) log.success("hallmark installed");
+                else log.error("Failed to install hallmark — run: npx skills add nutlope/hallmark");
             }
 
             const rtk = skills.find(s => s.name === 'rtk');

@@ -37,7 +37,7 @@ This setup automates the repetitive parts of project initialization:
 - **Skill Laboratory**: Optional integration for experimental tools:
   - `caveman`: Token compression for terser communication.
   - `cavemem`: Local memory for cross-session context.
-  - `ui-ux-pro-max`: Design intelligence for UI generation.
+  - `hallmark`: Anti-AI-slop design skill for UI generation ([Nutlope/hallmark](https://github.com/Nutlope/hallmark)).
   - `rtk`: Rust Token Killer for command rewriting and token savings (requires Rust/Cargo).
 - **Structured Knowledge**: 10+ rule files (`.claude/rules/`) and custom skills (`.claude/skills/`).
 
