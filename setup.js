@@ -491,10 +491,6 @@ async function setup() {
             log.success(`Hook: ${h}`);
         }
     }
-    if (isGlobal && selectedHooks.length && installSettings) {
-        log.warn("Global install: settings.json hook commands reference ${CLAUDE_PROJECT_DIR}/.claude/hooks — update them to ~/.claude/hooks manually.");
-    }
-
     for (const s of selectedSkills) {
         const skillFiles = await listFilesRecursive(`.claude/skills/${s}`);
         let count = 0;
