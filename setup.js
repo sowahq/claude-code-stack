@@ -127,7 +127,13 @@ function deepMergeSettings(base, add) {
     for (const k of Object.keys(add)) {
         const av = add[k], bv = out[k];
         if (Array.isArray(av)) {
-            out[k] = Array.from(new Set([...(Array.isArray(bv) ? bv : []), ...av]));
+            const seen = new Set();
+            out[k] = [...(Array.isArray(bv) ? bv : []), ...av].filter(item => {
+                const key = `${typeof item}:${item && typeof item === 'object' ? JSON.stringify(item) : String(item)}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
         } else if (av && typeof av === 'object') {
             out[k] = deepMergeSettings(bv && typeof bv === 'object' && !Array.isArray(bv) ? bv : {}, av);
         } else if (bv === undefined) {
