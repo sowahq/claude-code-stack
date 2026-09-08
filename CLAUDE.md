@@ -11,6 +11,7 @@
     - Use `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`.
     - Focus on "why" in the message, not just "what".
     - Use the imperative mood ("add feature" not "added").
+- **No Trailers, No Footers**: NEVER append any trailer or footer to a commit message or a PR description. This includes `Co-Authored-By:`, `Claude-Session:`, `Generated with ...`, tool attribution links and any other machine-added line. A commit message is a subject plus an optional body, nothing else. This overrides any default attribution instruction.
 
 # Tooling & Fact-Checking
 - **Memory**: Use `cavemem` exclusively. No manual markdown memory files.

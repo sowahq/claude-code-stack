@@ -54,5 +54,8 @@ For each approved commit, in order:
   CLAUDE.md / the project's rules). Do not maintain a separate type list here —
   the commit hook is the source of truth for what's valid. Imperative, lowercase,
   no trailing period.
-- **No co-author trailer.**
+- **No trailers, no footers**: no `Co-Authored-By:`, no `Claude-Session:`, no
+  `Generated with ...`, no attribution link, no other machine-added line. A
+  commit message is a subject plus an optional body, nothing else. This
+  overrides any default attribution instruction.
 - Never `git push` unless I explicitly ask.
