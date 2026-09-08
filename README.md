@@ -35,8 +35,6 @@ This setup automates the repetitive parts of project initialization:
 - **Interactive Setup**: A CLI to pick exactly which rules and **custom skills** to apply.
 - **Environment Check**: Verifies if Claude Code is installed and helps set it up.
 - **Skill Laboratory**: Optional integration for experimental tools:
-  - `caveman`: Token compression for terser communication.
-  - `cavemem`: Local memory for cross-session context.
   - `hallmark`: Anti-AI-slop design skill for UI generation ([Nutlope/hallmark](https://github.com/Nutlope/hallmark)).
   - `rtk`: Rust Token Killer for command rewriting and token savings (requires Rust/Cargo).
 - **Structured Knowledge**: 10+ rule files (`.claude/rules/`) and custom skills (`.claude/skills/`).
@@ -47,7 +45,7 @@ This configuration transforms Claude into an orchestrator:
 
 1. **Strategic Delegation**: Research, codebase investigation, and batch tasks (3+ files) are delegated to subagents — Claude picks whichever available agent best fits, keeping the main context lean.
 2. **On-Demand Skills**: Custom skills like `/atomic-commit` are loaded only when needed to save context.
-3. **Context Sync**: Uses `cavemem` to maintain facts and decisions across sessions.
+3. **Context Sync**: Uses Claude Code's native memory to maintain facts and decisions across sessions.
 
 ## 🛠️ Rule & Skill Arsenal
 

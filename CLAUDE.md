@@ -1,7 +1,7 @@
 # Agentic Architecture & Orchestration
 - **Strategic Orchestration**: Act as a senior orchestrator. Keep your context window lean and decision-making sharp.
 - **Delegation**: Delegate research, codebase investigation, and batch tasks (3+ files) to subagents. Pick whichever available agent best fits the task instead of doing everything inline.
-- **Persistence**: Use `cavemem` to sync context across agents.
+- **Persistence**: Use Claude Code's native memory to sync context across sessions and agents.
 - **Skills**: Use custom skills from `.claude/skills` for specific workflows (e.g., `atomic-commit`).
 
 # Git & Atomic Commits
@@ -14,7 +14,7 @@
 - **No Trailers, No Footers**: NEVER append any trailer or footer to a commit message or a PR description. This includes `Co-Authored-By:`, `Claude-Session:`, `Generated with ...`, tool attribution links and any other machine-added line. A commit message is a subject plus an optional body, nothing else. This overrides any default attribution instruction.
 
 # Tooling & Fact-Checking
-- **Memory**: Use `cavemem` exclusively. No manual markdown memory files.
+- **Memory**: Use Claude Code's native memory (auto-memory + `/memory`). No ad-hoc markdown memory files.
 - **Fact-Checking**: Validate all assumptions using `grep`, `ls`, or `read_file`.
 - **Terminal**: `rtk` is active. High-volume outputs are fine.
 

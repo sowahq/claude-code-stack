@@ -233,7 +233,7 @@ async function uninstallStack(target, claudeBase, mcpScope) {
     removeMcpServers(manifest.mcp || [], manifest.mcpScope || mcpScope);
     fs.rmSync(manifestPath(claudeBase), { force: true });
     log.info("Critical base config (your CLAUDE.md, settings.json, unmanaged files) left untouched.");
-    log.info("Global tools (rtk, caveman, etc.) are not removed.");
+    log.info("Global tools (rtk, etc.) are not removed.");
     log.success("Uninstall complete!");
 }
 
@@ -291,8 +291,6 @@ async function setup() {
     log.step("Checking Skills & Plugins");
     const hallmarkDir = path.join(GLOBAL_DIR, "skills", "hallmark");
     const skills = [
-        { name: 'caveman', check: 'claude plugin list', installed: false },
-        { name: 'cavemem', check: 'cavemem -v', installed: false },
         { name: 'hallmark', checkFn: () => fs.existsSync(path.join(hallmarkDir, 'SKILL.md')), installed: false }
     ];
 
@@ -327,27 +325,6 @@ async function setup() {
                  manager = await select("Choose your package manager:", ["npm", "pnpm", "yarn"]);
             }
             const cmd = manager === 'yarn' ? 'global add' : 'install -g';
-
-            const caveman = skills.find(s => s.name === 'caveman');
-            if (caveman && !caveman.installed) {
-                log.info("Installing caveman...");
-                try {
-                    execSync('claude plugin marketplace add JuliusBrussee/caveman', { stdio: 'ignore' });
-                    execSync('claude plugin install caveman@caveman', { stdio: 'ignore' });
-                    log.success("caveman installed");
-                } catch (e) {
-                    if (process.platform === 'win32') execSync('powershell -Command "irm https://raw.githubusercontent.com/JuliusBrussee/caveman/main/hooks/install.ps1 | iex"', { stdio: 'ignore' });
-                    else execSync('curl -s https://raw.githubusercontent.com/JuliusBrussee/caveman/main/hooks/install.sh | bash', { stdio: 'ignore' });
-                }
-            }
-
-            const cavemem = skills.find(s => s.name === 'cavemem');
-            if (cavemem && !cavemem.installed) {
-                log.info("Installing cavemem...");
-                execSync(`${manager} ${cmd} cavemem`, { stdio: 'ignore' });
-                try { execSync('cavemem install', { stdio: 'ignore' }); } catch(e) {}
-                log.success("cavemem installed");
-            }
 
             const hallmark = skills.find(s => s.name === 'hallmark');
             if (hallmark && !hallmark.installed) {
@@ -497,6 +474,7 @@ async function setup() {
             log.success(`Hook: ${h}`);
         }
     }
+
     for (const s of selectedSkills) {
         const skillFiles = await listFilesRecursive(`.claude/skills/${s}`);
         let count = 0;

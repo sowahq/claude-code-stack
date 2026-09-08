@@ -6,7 +6,7 @@ description: Host project memory and architecture tracking.
 Primary store for host project context.
 
 ## Memory Strategy
-- Use `cavemem` (if available) for cross-session facts.
+- Use the native auto-memory for cross-session facts.
 - Use native `/memory` for automated session context.
 - Update this file manually for structural decisions and durable facts.
 
