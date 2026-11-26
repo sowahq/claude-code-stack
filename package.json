@@ -1,0 +1,27 @@
+{
+  "name": "claude-code-stack",
+  "version": "2.0.0",
+  "description": "Personal Claude Code configuration: rules, agents, skills, hooks and settings, with a cross-platform installer.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "claude-code-stack": "dist/cli.mjs"
+  },
+  "files": [
+    "dist",
+    "stack"
+  ],
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.test.json",
+    "test": "npm run build && node --test \"test/**/*.test.mts\"",
+    "check": "npm run typecheck && npm test && node dist/cli.mjs doctor"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.7",
+    "typescript": "7.0.2"
+  }
+}
