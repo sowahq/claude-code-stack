@@ -5,5 +5,9 @@
     "noEmit": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["src", "test"]
+  "include": [
+    "src",
+    "test",
+    "plugins/tsgo-lsp/src"
+  ]
 }

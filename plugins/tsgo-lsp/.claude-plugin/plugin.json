@@ -1,12 +1,16 @@
 {
   "name": "tsgo-lsp",
   "description": "TypeScript and JavaScript code intelligence through the native TypeScript 7 language server (tsc --lsp). Needs TypeScript 7 or later on PATH: npm i -g typescript.",
-  "version": "1.0.0",
-  "author": { "name": "szerookii" },
+  "version": "1.1.0",
+  "author": {
+    "name": "szerookii"
+  },
   "lspServers": {
     "typescript": {
-      "command": "tsc",
-      "args": ["--lsp", "--stdio"],
+      "command": "node",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/bin/relay.mjs"
+      ],
       "extensionToLanguage": {
         ".ts": "typescript",
         ".tsx": "typescriptreact",

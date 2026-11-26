@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "plugins/tsgo-lsp/src",
+    "outDir": "plugins/tsgo-lsp/bin"
+  },
+  "include": [
+    "plugins/tsgo-lsp/src"
+  ]
+}

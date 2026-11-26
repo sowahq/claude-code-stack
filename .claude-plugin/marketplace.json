@@ -1,6 +1,9 @@
 {
   "name": "code-stack",
-  "owner": { "name": "szerookii" },
+  "description": "Plugins from the claude-code-stack config: a TypeScript 7 language server for Claude Code.",
+  "owner": {
+    "name": "szerookii"
+  },
   "plugins": [
     {
       "name": "tsgo-lsp",

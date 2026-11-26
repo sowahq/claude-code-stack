@@ -15,7 +15,7 @@
     "node": ">=22.18"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.plugins.json",
     "typecheck": "tsc -p tsconfig.test.json",
     "test": "npm run build && node --test \"test/**/*.test.mts\"",
     "check": "npm run typecheck && npm test && node dist/cli.mjs doctor"
