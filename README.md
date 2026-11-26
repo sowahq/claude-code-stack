@@ -38,7 +38,15 @@ From a clone: `node dist/cli.mjs [command] [options]`.
 | `src/hooks/` (compiled to `dist/hooks/`) | `hooks/claude-code-stack/` | One PreToolUse guard for Bash and PowerShell, written in Node with no `jq` or bash dependency. |
 | `stack/settings.json` | `settings.json` | Merged. Keys you already set are never overridden. |
 | MCP servers | `claude mcp add` | Svelte, Ark UI, Figma (figma-mcp-go), Todoist. Wrapped in `cmd /c` on Windows. |
-| Plugins | `claude plugin install` | `gopls-lsp`, `rust-analyzer-lsp`, `typescript-lsp`, `frontend-design` (official marketplace), `i-have-adhd` with its always-on flag. Plugins you already had are never reinstalled or removed. |
+| Plugins | `claude plugin install` | `gopls-lsp`, `rust-analyzer-lsp` and `frontend-design` from the official marketplace, `tsgo-lsp` from this repo, `i-have-adhd` with its always-on flag. Plugins you already had are never reinstalled or removed. |
+
+### tsgo-lsp
+
+TypeScript 7 no longer ships `tsserver`, so the official `typescript-lsp` plugin, which runs `typescript-language-server`, has nothing to drive in a TS 7 project. This repo is also a plugin marketplace whose `tsgo-lsp` plugin runs the native server, `tsc --lsp --stdio`. It needs TypeScript 7 or later on PATH (`npm i -g typescript`). The installer replaces `typescript-lsp` with it when the stack had installed `typescript-lsp`. To install it on its own:
+
+```
+/plugin install tsgo-lsp --marketplace sowahq/claude-code-stack
+```
 
 Optional tools offered on global installs: [rtk](https://github.com/rtk-ai/rtk) (needs cargo).
 

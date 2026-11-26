@@ -9,7 +9,7 @@ import type { Catalog, McpServer, Selection } from '../src/catalog.mts';
 import { parseArgs } from '../src/args.mts';
 import type { CliOptions } from '../src/args.mts';
 import { resolveTarget } from '../src/paths.mts';
-import { meetsMinimumNode } from '../src/doctor.mts';
+import { meetsMinimumNode, parseMajorVersion } from '../src/doctor.mts';
 
 describe('mergeOwned / removeOwned', () => {
     const cases = [
@@ -216,4 +216,15 @@ describe('withNewComponents', () => {
         assert.deepEqual(result.checks, ['commit-trailers']);
         assert.deepEqual(result.plugins, ['gopls-lsp']);
     });
+});
+
+describe('parseMajorVersion', () => {
+    const cases: ReadonlyArray<{ output: string; want: number | null }> = [
+        { output: 'Version 7.0.2', want: 7 },
+        { output: 'Version 5.9.3\n', want: 5 },
+        { output: 'no version here', want: null },
+    ];
+    for (const { output, want } of cases) {
+        it(`${JSON.stringify(output)} -> ${want}`, (): void => assert.equal(parseMajorVersion(output), want));
+    }
 });

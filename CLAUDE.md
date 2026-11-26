@@ -6,6 +6,7 @@ This repo is the source of a Claude Code config. `stack/` is the payload copied 
 - `src/hooks/`: guard hook sources. Must run on macOS, Linux and Windows.
 - `dist/`: compiled output of `src/` (`npm run build`), committed because `npx` runs `dist/cli.mjs`. Never edit by hand: rebuild. Hooks are installed from `dist/hooks/`.
 - `stack/`: payload (CLAUDE.md, rules, agents, skills, settings, flags).
+- `.claude-plugin/marketplace.json` and `plugins/`: this repo is also a plugin marketplace (`code-stack`). Validate with `claude plugin validate .` after changing a plugin.
 - `test/`: `node --test`. Table-driven. `cli.test.mts` runs the compiled `dist/cli.mjs` against temp dirs with `CLAUDE_CONFIG_DIR` and a PATH without `claude`.
 
 Constraints:

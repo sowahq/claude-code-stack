@@ -16,10 +16,11 @@ export const MCP_SERVERS = [
     { name: 'todoist', label: 'Todoist: tasks and projects (HTTP, authenticate with /mcp)', match: 'ai.todoist.net/mcp', transport: 'http', url: 'https://ai.todoist.net/mcp' },
 ];
 const OFFICIAL = { marketplace: 'claude-plugins-official', source: 'anthropics/claude-plugins-official' };
+const STACK_MARKETPLACE = { marketplace: 'code-stack', source: 'sowahq/claude-code-stack' };
 export const PLUGINS = [
     { name: 'gopls-lsp', ...OFFICIAL, label: 'gopls-lsp: Go definitions, references and diagnostics (needs gopls)', binary: 'gopls' },
     { name: 'rust-analyzer-lsp', ...OFFICIAL, label: 'rust-analyzer-lsp: Rust code intelligence (needs rust-analyzer)', binary: 'rust-analyzer' },
-    { name: 'typescript-lsp', ...OFFICIAL, label: 'typescript-lsp: TS/JS code intelligence (needs typescript-language-server)', binary: 'typescript-language-server' },
+    { name: 'tsgo-lsp', ...STACK_MARKETPLACE, label: 'tsgo-lsp: TS/JS code intelligence from the native TypeScript 7 server (needs tsc 7 on PATH)', binary: 'tsc', binaryMinMajor: 7 },
     { name: 'frontend-design', ...OFFICIAL, label: 'frontend-design: distinctive UI design guidance' },
     {
         name: 'i-have-adhd',
@@ -30,6 +31,10 @@ export const PLUGINS = [
     },
 ];
 /** Returns the `name@marketplace` id Claude Code uses for a plugin. */
+/** Plugins the stack used to install and now removes on update, because a listed plugin replaced them. */
+export const RETIRED_PLUGINS = [
+    { name: 'typescript-lsp', ...OFFICIAL, label: 'typescript-lsp (replaced by tsgo-lsp: TypeScript 7 no longer ships tsserver)' },
+];
 export const pluginId = (plugin) => `${plugin.name}@${plugin.marketplace}`;
 const markdownNames = (dir) => fs.existsSync(dir)
     ? fs

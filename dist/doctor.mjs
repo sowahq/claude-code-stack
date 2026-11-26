@@ -18,6 +18,11 @@ export const meetsMinimumNode = (version) => {
     const [major = 0, minor = 0] = version.split('.').map(Number);
     return major > MIN_NODE[0] || (major === MIN_NODE[0] && minor >= MIN_NODE[1]);
 };
+/** Reads the first major version number printed by `binary --version`. */
+export const parseMajorVersion = (output) => {
+    const match = /(\d+)\.\d+/.exec(output);
+    return match?.[1] === undefined ? null : Number(match[1]);
+};
 /** Lists rule files whose frontmatter Claude Code ignores, which makes them load in every session. */
 export const rulesWithIgnoredFrontmatter = (rulesDir) => fs.existsSync(rulesDir)
     ? fs
@@ -38,7 +43,7 @@ const findGuardArgs = (settings) => {
         .map(hookArgs)
         .find((args) => args.some((arg) => String(arg).includes(`${HOOKS_SUBDIR}/guard-bash.mjs`)));
 };
-const requiredBinaries = (manifest) => PLUGINS.flatMap((plugin) => (plugin.binary !== undefined && manifest?.selection?.plugins?.includes(plugin.name) ? [{ name: plugin.name, binary: plugin.binary }] : []));
+const requiredBinaries = (manifest) => PLUGINS.flatMap((plugin) => (plugin.binary !== undefined && manifest?.selection?.plugins?.includes(plugin.name) ? [{ name: plugin.name, binary: plugin.binary, minMajor: plugin.binaryMinMajor }] : []));
 /** Collects health findings for an install target. */
 export const diagnose = (target) => {
     const findings = [];
@@ -103,9 +108,16 @@ export const diagnose = (target) => {
     catch (error) {
         add('fail', `settings.json: ${errorMessage(error)}`);
     }
-    for (const { name, binary } of requiredBinaries(manifest)) {
-        const found = which(binary);
-        add(found ? 'ok' : 'warn', found ? `${name}: ${binary} found` : `${name}: ${binary} not on PATH, the plugin has no server to talk to`);
+    for (const { name, binary, minMajor } of requiredBinaries(manifest)) {
+        if (!which(binary)) {
+            add('warn', `${name}: ${binary} not on PATH, the plugin has no server to talk to`);
+            continue;
+        }
+        const major = minMajor === undefined ? null : parseMajorVersion(run(binary, ['--version']).stdout);
+        if (minMajor !== undefined && (major === null || major < minMajor))
+            add('warn', `${name}: ${binary} ${major ?? 'unknown version'} found, ${minMajor}+ required`);
+        else
+            add('ok', `${name}: ${binary} found`);
     }
     const legacy = rulesWithIgnoredFrontmatter(path.join(target.base, 'rules'));
     if (legacy.length)

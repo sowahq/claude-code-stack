@@ -220,19 +220,51 @@ describe('cli plugins (fake claude CLI)', () => {
         const result = run('install', '--global', '--yes');
         assert.equal(result.status, 0, result.stderr + result.stdout);
         const installs = calls().filter((argv) => argv[0] === 'plugin' && argv[1] === 'install');
-        assert.deepEqual(installs.map((argv) => argv[2]).sort(), ['frontend-design', 'gopls-lsp', 'rust-analyzer-lsp', 'typescript-lsp']);
-        for (const argv of installs) assert.deepEqual(argv.slice(3), ['--marketplace', 'anthropics/claude-plugins-official', '--scope', 'user', '--yes']);
+        assert.deepEqual(installs.map((argv) => argv[2]).sort(), ['frontend-design', 'gopls-lsp', 'rust-analyzer-lsp', 'tsgo-lsp']);
+        for (const argv of installs) {
+            const marketplace = argv[2] === 'tsgo-lsp' ? 'sowahq/claude-code-stack' : 'anthropics/claude-plugins-official';
+            assert.deepEqual(argv.slice(3), ['--marketplace', marketplace, '--scope', 'user', '--yes']);
+        }
         assert.ok(fs.existsSync(path.join(dir, '.i-have-adhd-always')));
         const manifest = readJson(path.join(dir, '.claude-code-stack-manifest.json'));
-        assert.deepEqual([...list(get(manifest, 'plugins'))].sort(), ['frontend-design', 'gopls-lsp', 'rust-analyzer-lsp', 'typescript-lsp']);
+        assert.deepEqual([...list(get(manifest, 'plugins'))].sort(), ['frontend-design', 'gopls-lsp', 'rust-analyzer-lsp', 'tsgo-lsp']);
     });
 
     it('uninstalls only the plugins it installed', () => {
         const result = run('uninstall', '--global', '--yes');
         assert.equal(result.status, 0, result.stderr + result.stdout);
         const removed = calls().filter((argv) => argv[0] === 'plugin' && argv[1] === 'uninstall').map((argv) => argv[2]).sort();
-        assert.deepEqual(removed, ['frontend-design@claude-plugins-official', 'gopls-lsp@claude-plugins-official', 'rust-analyzer-lsp@claude-plugins-official', 'typescript-lsp@claude-plugins-official']);
+        assert.deepEqual(removed, ['frontend-design@claude-plugins-official', 'gopls-lsp@claude-plugins-official', 'rust-analyzer-lsp@claude-plugins-official', 'tsgo-lsp@code-stack']);
         assert.ok(!fs.existsSync(path.join(dir, '.i-have-adhd-always')));
+    });
+});
+
+describe('cli retires plugins the stack no longer ships', () => {
+    it('uninstalls typescript-lsp it installed and installs tsgo-lsp instead', () => {
+        const dir = freshDir('retired-plugin');
+        const bin = fakeClaudeBin();
+        const logFile = path.join(scratch, 'retired-plugin.log');
+        const env = (plugins: unknown[]): NodeJS.ProcessEnv => ({
+            ...isolatedEnv(dir),
+            PATH: [bin, path.dirname(process.execPath)].join(path.delimiter),
+            FAKE_CLAUDE_LOG: logFile,
+            FAKE_CLAUDE_PLUGINS: JSON.stringify(plugins),
+        });
+        assert.equal(spawnSync(process.execPath, [CLI, 'install', '--global', '--yes'], { encoding: 'utf8', env: env([]) }).status, 0);
+        const manifestFile = path.join(dir, '.claude-code-stack-manifest.json');
+        const manifest = readJson(manifestFile);
+        const owned = [...list(get(manifest, 'plugins')).map(text).filter((name) => name !== 'tsgo-lsp'), 'typescript-lsp'];
+        fs.writeFileSync(manifestFile, JSON.stringify({ ...(manifest as object), plugins: owned }));
+        const installed = [...owned.map((name) => ({ id: name === 'i-have-adhd' ? 'i-have-adhd@i-have-adhd' : `${name}@claude-plugins-official`, scope: 'user', enabled: true }))];
+        fs.rmSync(logFile, { force: true });
+        const result = spawnSync(process.execPath, [CLI, 'install', '--global', '--yes'], { encoding: 'utf8', env: env(installed) });
+        assert.equal(result.status, 0, result.stderr + result.stdout);
+        const calls = fs.readFileSync(logFile, 'utf8').trim().split('\n').map((line) => list(JSON.parse(line)).map(text));
+        assert.ok(calls.some((argv) => argv.join(' ') === 'plugin uninstall typescript-lsp@claude-plugins-official --scope user'));
+        assert.ok(calls.some((argv) => argv[0] === 'plugin' && argv[1] === 'install' && argv[2] === 'tsgo-lsp'));
+        const after = list(get(readJson(manifestFile), 'plugins')).map(text);
+        assert.ok(!after.includes('typescript-lsp'));
+        assert.ok(after.includes('tsgo-lsp'));
     });
 });
 

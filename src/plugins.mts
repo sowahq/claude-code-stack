@@ -1,4 +1,4 @@
-import { PLUGINS, pluginId } from './catalog.mts';
+import { PLUGINS, RETIRED_PLUGINS, pluginId } from './catalog.mts';
 import type { Plugin } from './catalog.mts';
 import { run } from './exec.mts';
 import type { McpScope } from './paths.mts';
@@ -26,7 +26,7 @@ export const detectPlugins = (cwd: string, scope: McpScope): PluginState | null 
     if (result.missing || !result.ok) return null;
     const entries = parseJson(result.stdout);
     if (!Array.isArray(entries)) return null;
-    const known = new Map(PLUGINS.map((plugin) => [pluginId(plugin), plugin.name]));
+    const known = new Map([...PLUGINS, ...RETIRED_PLUGINS].map((plugin) => [pluginId(plugin), plugin.name]));
     const state: PluginState = { enabled: new Set(), disabled: new Set() };
     for (const entry of entries) {
         if (!isPlainObject(entry) || typeof entry.id !== 'string') continue;
@@ -43,7 +43,7 @@ export const enableArgs = (plugin: Plugin, scope: McpScope, installedButDisabled
         ? ['plugin', 'enable', pluginId(plugin), '--scope', scope]
         : ['plugin', 'install', plugin.name, '--marketplace', plugin.source, '--scope', scope, '--yes'];
 
-const findPlugin = (name: string): Plugin | undefined => PLUGINS.find((candidate) => candidate.name === name);
+const findPlugin = (name: string): Plugin | undefined => [...PLUGINS, ...RETIRED_PLUGINS].find((candidate) => candidate.name === name);
 
 /** Installs a stack plugin, or enables it when it is installed but disabled. */
 export const enablePlugin = (name: string, scope: McpScope, cwd: string, installedButDisabled: boolean): boolean => {

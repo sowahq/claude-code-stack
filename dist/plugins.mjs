@@ -1,4 +1,4 @@
-import { PLUGINS, pluginId } from './catalog.mjs';
+import { PLUGINS, RETIRED_PLUGINS, pluginId } from './catalog.mjs';
 import { run } from './exec.mjs';
 import { isPlainObject } from './settings.mjs';
 const parseJson = (raw) => {
@@ -20,7 +20,7 @@ export const detectPlugins = (cwd, scope) => {
     const entries = parseJson(result.stdout);
     if (!Array.isArray(entries))
         return null;
-    const known = new Map(PLUGINS.map((plugin) => [pluginId(plugin), plugin.name]));
+    const known = new Map([...PLUGINS, ...RETIRED_PLUGINS].map((plugin) => [pluginId(plugin), plugin.name]));
     const state = { enabled: new Set(), disabled: new Set() };
     for (const entry of entries) {
         if (!isPlainObject(entry) || typeof entry.id !== 'string')
@@ -36,7 +36,7 @@ export const detectPlugins = (cwd, scope) => {
 export const enableArgs = (plugin, scope, installedButDisabled) => installedButDisabled
     ? ['plugin', 'enable', pluginId(plugin), '--scope', scope]
     : ['plugin', 'install', plugin.name, '--marketplace', plugin.source, '--scope', scope, '--yes'];
-const findPlugin = (name) => PLUGINS.find((candidate) => candidate.name === name);
+const findPlugin = (name) => [...PLUGINS, ...RETIRED_PLUGINS].find((candidate) => candidate.name === name);
 /** Installs a stack plugin, or enables it when it is installed but disabled. */
 export const enablePlugin = (name, scope, cwd, installedButDisabled) => {
     const plugin = findPlugin(name);
