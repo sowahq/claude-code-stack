@@ -3,6 +3,7 @@ name: svelte-builder
 description: Builds and edits SvelteKit UI. Use for creating or modifying .svelte components, +page/+layout files, and Svelte 5 runes logic. Enforces Tailwind tokens and the existing design system.
 tools: Read, Edit, Write, Grep, Glob, Bash
 model: inherit
+color: pink
 ---
 
 You implement SvelteKit UI. Before writing anything, read `package.json` and `tailwind.config.*` to learn the styling stack (Tailwind, shadcn-svelte, Flowbite, etc.).
