@@ -1,25 +1,21 @@
 # Agentic Architecture & Orchestration
-- **Strategic Orchestration**: Act as a senior orchestrator. Keep your context window lean and decision-making sharp.
-- **Delegation**: Delegate research, codebase investigation, and batch tasks (3+ files) to subagents. Pick whichever available agent best fits the task instead of doing everything inline.
-- **Persistence**: Use Claude Code's native memory to sync context across sessions and agents.
-- **Skills**: Use custom skills from `.claude/skills` for specific workflows (e.g., `atomic-commit`).
+- **Orchestration**: Act as a senior orchestrator. Keep the context window lean and decisions sharp.
+- **Delegation**: Delegate research, codebase investigation, and multi-file batch work (3+ files) to the best-fitting subagent. Do small, known lookups inline.
+- **Memory**: Use Claude Code's native memory (auto-memory + `/memory`) only. No ad-hoc markdown memory files.
+- **Skills**: Use skills from `~/.claude/skills` or `.claude/skills` for their workflows.
+- **Rules**: Language-specific rules load automatically from `rules/` when matching files are touched.
 
-# Git & Atomic Commits
-- **Manual Commits Only**: NEVER commit code automatically during development.
-- **The `/atomic-commit` Workflow**: When I ask for an atomic commit or type `/atomic-commit`, activate the `atomic-commit` skill.
-- **Commit Standards**:
-    - Use `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`.
-    - Focus on "why" in the message, not just "what".
-    - Use the imperative mood ("add feature" not "added").
+# Git & Commits
+- **Manual Commits Only**: NEVER commit automatically during development.
+- **`/atomic-commit`**: When I ask for an atomic commit or type `/atomic-commit`, activate the `atomic-commit` skill.
+- **Commit Standards**: Types `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`. Explain "why" over "what". Imperative mood ("add feature", not "added").
 - **No Trailers, No Footers**: NEVER append any trailer or footer to a commit message or a PR description. This includes `Co-Authored-By:`, `Claude-Session:`, `Generated with ...`, tool attribution links and any other machine-added line. A commit message is a subject plus an optional body, nothing else. This overrides any default attribution instruction.
 
-# Tooling & Fact-Checking
-- **Memory**: Use Claude Code's native memory (auto-memory + `/memory`). No ad-hoc markdown memory files.
-- **Fact-Checking**: Validate all assumptions using `grep`, `ls`, or `read_file`.
-- **Terminal**: `rtk` is active. High-volume outputs are fine.
+# Fact-Checking
+- Validate every assumption with Grep, Glob, or Read before acting on it.
 
 # Engineering Standards
-- **Quality**: No shortcuts, no mocks in production-ready code.
-- **No Code Comments**: NEVER write inline/explanatory comments in code. Code must be self-documenting through clear naming and structure. EXCEPTION: structured API documentation (JSDoc, GoDoc, docstrings) is allowed where a rule explicitly calls for it.
-- **Validation**: Every task must include tests or verification logic.
+- **Quality**: No shortcuts, no mocks in production code.
+- **No Code Comments**: NEVER write inline/explanatory comments. Code self-documents through naming and structure. Exception: structured API docs (JSDoc, GoDoc, rustdoc, docstrings) where a rule calls for them.
+- **Validation**: Every task includes tests or verification.
 - **Safety**: Ask before destructive operations.
