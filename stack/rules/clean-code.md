@@ -44,6 +44,7 @@ Write code a reviewer can read once and trust. Every item below is checkable in 
 - No TODO without a ticket reference.
 
 ## Comments
+- Code, comments and messages are in English only.
 - Code explains *what* through names and structure. Never comment to paraphrase code.
 - A one-line comment is allowed only for a *why* the code cannot show: a workaround with its issue link, an external constraint, a counter-intuitive choice.
 - Structured API docs (JSDoc, GoDoc, rustdoc, docstrings) follow the language rules.

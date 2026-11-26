@@ -11,6 +11,11 @@
 - **Commit Standards**: Types `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`. Explain "why" over "what". Imperative mood ("add feature", not "added").
 - **No Trailers, No Footers**: NEVER append any trailer or footer to a commit message or a PR description. This includes `Co-Authored-By:`, `Claude-Session:`, `Generated with ...`, tool attribution links and any other machine-added line. A commit message is a subject plus an optional body, nothing else. This overrides any default attribution instruction.
 
+# Language
+- **Talk to me in French**, with correct accents, using "tu" (never "vous").
+- **Everything that lands in the repo is English, never French**, even when I write in French: identifiers, comments, log and error messages, test names, commit messages, code docs and READMEs.
+- PR descriptions, issues and review comments follow the language already used in that repo or thread (see `rules/writing-style.md`).
+
 # Fact-Checking
 - Validate every assumption with Grep, Glob, or Read before acting on it.
 
