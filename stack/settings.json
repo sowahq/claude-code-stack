@@ -52,19 +52,5 @@
       "Read(~/.git-credentials)",
       "Read(~/.netrc)"
     ]
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh -c 'for p in \"$HOME/.claude/hooks/block-commit-trailers.sh\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-commit-trailers.sh\"; do [ -x \"$p\" ] && exec \"$p\"; done; exit 0'",
-            "timeout": 10
-          }
-        ]
-      }
-    ]
   }
 }

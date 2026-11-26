@@ -1,0 +1,235 @@
+[
+    {
+        "$schema": "https://json.schemastore.org/claude-code-settings.json",
+        "language": "french",
+        "attribution": {
+            "commit": "",
+            "pr": "",
+            "sessionUrl": false
+        },
+        "includeGitInstructions": false,
+        "spinnerTipsEnabled": false,
+        "autoMemoryEnabled": true,
+        "outputStyle": "tui",
+        "teammateMode": "auto",
+        "env": {
+            "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+        },
+        "permissions": {
+            "allow": [
+                "Bash(go test *)",
+                "Bash(go vet *)",
+                "Bash(go doc *)",
+                "Bash(go build *)",
+                "Bash(go fmt *)",
+                "Bash(gofmt *)",
+                "Bash(cargo test *)",
+                "Bash(cargo clippy *)",
+                "Bash(cargo build *)",
+                "Bash(cargo fmt *)",
+                "Bash(cargo doc *)",
+                "Bash(rustfmt *)",
+                "Bash(docker build *)",
+                "Bash(npx prisma *)",
+                "Bash(npx drizzle-kit *)",
+                "Bash(npx svelte-check *)",
+                "Bash(npm run *)",
+                "Bash(pnpm *)"
+            ],
+            "deny": [
+                "Read(./.env)",
+                "Read(./.env.*)",
+                "Read(./secrets/**)"
+            ]
+        },
+        "hooks": {
+            "PreToolUse": [
+                {
+                    "matcher": "Bash",
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": "sh -c 'for p in \"$HOME/.claude/hooks/block-commit-trailers.sh\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-commit-trailers.sh\"; do [ -x \"$p\" ] && exec \"$p\"; done; exit 0'",
+                            "timeout": 10
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    {
+        "$schema": "https://json.schemastore.org/claude-code-settings.json",
+        "language": "french",
+        "attribution": {
+            "commit": "",
+            "pr": ""
+        },
+        "includeGitInstructions": false,
+        "spinnerTipsEnabled": false,
+        "autoMemoryEnabled": true,
+        "outputStyle": "tui",
+        "teammateMode": "auto",
+        "env": {
+            "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+        },
+        "permissions": {
+            "allow": [
+                "Bash(go test *)",
+                "Bash(go vet *)",
+                "Bash(go doc *)",
+                "Bash(go build *)",
+                "Bash(go fmt *)",
+                "Bash(gofmt *)",
+                "Bash(cargo test *)",
+                "Bash(cargo clippy *)",
+                "Bash(cargo build *)",
+                "Bash(cargo fmt *)",
+                "Bash(cargo doc *)",
+                "Bash(rustfmt *)",
+                "Bash(docker build *)",
+                "Bash(npx prisma *)",
+                "Bash(npx drizzle-kit *)",
+                "Bash(npx svelte-check *)",
+                "Bash(npm run *)",
+                "Bash(pnpm *)"
+            ],
+            "deny": [
+                "Read(./.env)",
+                "Read(./.env.*)",
+                "Read(./secrets/**)"
+            ]
+        },
+        "hooks": {}
+    },
+    {
+        "$schema": "https://json.schemastore.org/claude-code-settings.json",
+        "language": "french",
+        "attribution": {
+            "commit": "",
+            "pr": ""
+        },
+        "includeGitInstructions": false,
+        "spinnerTipsEnabled": false,
+        "autoMemoryEnabled": true,
+        "outputStyle": "tui",
+        "teammateMode": "auto",
+        "env": {
+            "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+        },
+        "permissions": {
+            "allow": [
+                "Bash(go test *)",
+                "Bash(go vet *)",
+                "Bash(go doc *)",
+                "Bash(go build *)",
+                "Bash(go fmt *)",
+                "Bash(gofmt *)",
+                "Bash(cargo test *)",
+                "Bash(cargo clippy *)",
+                "Bash(cargo build *)",
+                "Bash(cargo fmt *)",
+                "Bash(cargo doc *)",
+                "Bash(rustfmt *)",
+                "Bash(docker build *)",
+                "Bash(npx prisma *)",
+                "Bash(npx drizzle-kit *)",
+                "Bash(npx svelte-check *)",
+                "Bash(npm run *)",
+                "Bash(pnpm *)"
+            ],
+            "deny": [
+                "Read(./.env)",
+                "Read(./.env.*)",
+                "Read(./secrets/**)"
+            ]
+        },
+        "hooks": {
+            "PostToolUse": [
+                {
+                    "matcher": "Write|Edit",
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/format-check.sh",
+                            "timeout": 60
+                        }
+                    ]
+                }
+            ],
+            "TaskCompleted": [
+                {
+                    "matcher": "",
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/task-gate.sh",
+                            "timeout": 30
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    {
+        "$schema": "https://json.schemastore.org/claude-code-settings.json",
+        "language": "french",
+        "attribution": {
+            "commit": "",
+            "pr": ""
+        },
+        "includeGitInstructions": false,
+        "spinnerTipsEnabled": false,
+        "autoMemoryEnabled": true,
+        "permissions": {
+            "deny": [
+                "Read(./.env)",
+                "Read(./.env.*)",
+                "Read(./secrets/**)"
+            ]
+        },
+        "hooks": {
+            "PostToolUse": [
+                {
+                    "matcher": "Write|Edit",
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/format-check.sh",
+                            "timeout": 60
+                        }
+                    ]
+                }
+            ],
+            "TaskCompleted": [
+                {
+                    "matcher": "",
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/task-gate.sh",
+                            "timeout": 30
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    {
+        "$schema": "https://json.schemastore.org/claude-code-settings.json",
+        "language": "french",
+        "attribution": {
+            "commit": "",
+            "pr": ""
+        },
+        "includeGitInstructions": false,
+        "spinnerTipsEnabled": false,
+        "autoMemoryEnabled": true,
+        "permissions": {
+            "deny": [
+                "Read(./.env)",
+                "Read(./.env.*)",
+                "Read(./secrets/**)"
+            ]
+        }
+    }
+]
