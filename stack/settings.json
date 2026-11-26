@@ -1,11 +1,10 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "language": "french",
+  "language": "French",
   "attribution": { "commit": "", "pr": "", "sessionUrl": false },
   "includeGitInstructions": false,
   "spinnerTipsEnabled": false,
   "autoMemoryEnabled": true,
-  "outputStyle": "tui",
   "teammateMode": "auto",
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
@@ -18,6 +17,8 @@
       "Bash(go build *)",
       "Bash(go fmt *)",
       "Bash(gofmt *)",
+      "Bash(sqlc generate*)",
+      "Bash(sqlc vet*)",
       "Bash(cargo test *)",
       "Bash(cargo clippy *)",
       "Bash(cargo build *)",
@@ -29,12 +30,27 @@
       "Bash(npx drizzle-kit *)",
       "Bash(npx svelte-check *)",
       "Bash(npm run *)",
-      "Bash(pnpm *)"
+      "Bash(npm test*)",
+      "Bash(pnpm run *)",
+      "Bash(pnpm test*)",
+      "Bash(pnpm check*)",
+      "Bash(pnpm lint*)",
+      "Bash(pnpm build*)",
+      "Bash(pnpm exec svelte-check*)"
     ],
     "deny": [
-      "Read(./.env)",
-      "Read(./.env.*)",
-      "Read(./secrets/**)"
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/secrets/**)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.config/gh/**)",
+      "Read(~/.docker/config.json)",
+      "Read(~/.kube/config)",
+      "Read(~/.git-credentials)",
+      "Read(~/.netrc)"
     ]
   },
   "hooks": {
