@@ -11,6 +11,7 @@ Write code a reviewer can read once and trust. Every item below is checkable in 
 - No speculative abstractions, options, parameters or extension points. Add them when a second real use appears.
 - Never mix a refactor and a behaviour change in one commit.
 - A diff beyond ~400 lines is a signal to split it into reviewable steps.
+- Optimize only for a measured problem (benchmark, profile, measured latency) and say which measurement justified it. Without one, write the simple version: no cache, pool or memoization on a hunch. The cheap wins need no measurement: no work repeated inside a loop, no N+1 queries, no unbounded reads into memory.
 
 ## Names
 - Names state intent in the domain's vocabulary. No abbreviations except universal ones (`id`, `url`, `ctx`).
@@ -38,6 +39,10 @@ Write code a reviewer can read once and trust. Every item below is checkable in 
 - Group by feature, not by technical kind. Keep the public surface minimal; export only what callers use.
 - No circular dependencies. Dependencies point from features toward shared core.
 - A file beyond ~300-400 lines, or with unrelated responsibilities, is a signal to split.
+
+## Ship working code
+- Code and config must run as delivered. Never leave a placeholder such as `[version]`, `<digest>` or `TODO_URL` where a value is expected: read the real value from the project, or use a concrete current value and say in your answer that it should be checked.
+- Add only what was asked. No extra endpoint, healthcheck, flag or dependency the request and the code do not call for.
 
 ## Leave nothing dead
 - No commented-out code, debug logs, unused imports, exports, parameters or flags.

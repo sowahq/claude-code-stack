@@ -4,11 +4,12 @@ paths:
   - "**/Cargo.toml"
 ---
 
-# Rust Rules
-- **Error Handling**: Return `Result<T, E>` and propagate with `?`. NEVER `unwrap()`/`expect()` in production paths (tests and `main` setup excepted, and only when the invariant is documented). Use `thiserror` for library errors, `anyhow` for application-level errors.
-- **No `unsafe`**: Avoid `unsafe` blocks. If truly required, isolate them, document the invariant being upheld with a `// SAFETY:` comment, and keep the block minimal.
-- **Ownership & Borrowing**: Prefer borrowing over cloning. Reach for `Clone`/`to_owned()` only when ownership is genuinely needed. Accept `&str`/`&[T]` in APIs, return owned types.
-- **Formatting & Lints**: Assume `cargo fmt`. Code must pass `cargo clippy -- -D warnings`. Do not manually reformat against rustfmt conventions.
-- **Documentation**: Use `///` doc comments on public items with `# Examples`/`# Errors`/`# Panics` sections where relevant. Inspect crate APIs with `cargo doc`/`rustdoc` instead of guessing.
-- **Concurrency**: Prefer channels (`std::sync::mpsc`, `tokio::sync`) or `Arc<Mutex<_>>` with clear lock scopes. For async, stick to one runtime (Tokio) and avoid blocking calls inside async contexts.
-- **Dependencies**: Keep `Cargo.toml` lean. Prefer std or a small focused crate over pulling a large framework for one function.
+# Rust
+
+- Return `Result` and propagate with `?`. `unwrap()` and `expect()` stay out of production paths; in tests and `main` setup, `expect("why this cannot fail")` documents the invariant. Libraries define errors with `thiserror`, applications use `anyhow` with `.context(...)`.
+- Avoid `unsafe`. When it is required, keep the block minimal and put a `// SAFETY:` comment above it stating the invariant that makes it sound.
+- Borrow before cloning. Accept `&str` and `&[T]` in parameters, return owned types, and reach for `clone()` only when ownership is really needed.
+- Code is `cargo fmt`-clean and passes `cargo clippy -- -D warnings`.
+- Public items carry `///` docs with `# Errors` and `# Panics` sections where they apply. Check crate APIs with `cargo doc` instead of guessing.
+- One async runtime (Tokio). No blocking calls inside async code: use `spawn_blocking` for CPU-heavy or blocking work. Keep `Mutex` guards short and never hold one across an `.await`.
+- Keep `Cargo.toml` lean: prefer std or a small focused crate, and enable only the features you use.

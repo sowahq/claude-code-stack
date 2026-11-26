@@ -6,10 +6,11 @@ paths:
   - "**/db/schema.ts"
 ---
 
-# Drizzle Rules
-- **Type Safety**: Strictly use Drizzle's `inferSelect` and `inferInsert` to derive TypeScript types from your schema.
-- **Schema Organization**: For large projects, split the schema into multiple files (e.g., `users.ts`, `posts.ts`) and export them from a central `index.ts`.
-- **Naming Strategy**: Use `snake_case` for database column names and `camelCase` for JavaScript property names.
-- **Migrations**: Use `drizzle-kit generate` to create migrations. Review generated SQL before applying with `drizzle-kit migrate`.
-- **Query API**: Favor the Relational Query API (`db.query`) for complex fetches and the Standard API for simple, high-performance CRUD.
-- **Zod Integration**: Use `drizzle-zod` to automatically generate validation schemas from your database definitions.
+# Drizzle
+
+- Derive TypeScript types from the schema with `$inferSelect` and `$inferInsert` instead of writing them by hand.
+- Columns are `snake_case` in the database and `camelCase` in TypeScript.
+- Split a large schema into one file per domain (`users.ts`, `orders.ts`) re-exported from an `index.ts`.
+- Generate migrations with `drizzle-kit generate`, read the generated SQL, then apply it with `drizzle-kit migrate`. `drizzle-kit push` is for local prototyping only.
+- Use the relational query API (`db.query`) for nested reads and the core query builder for simple CRUD and anything performance-sensitive.
+- Build validation schemas from the table definitions: `drizzle-zod` on Drizzle 0.x, `drizzle-orm/zod` on Drizzle 1.x. Check which major is installed.

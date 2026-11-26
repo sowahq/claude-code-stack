@@ -3,12 +3,12 @@ paths:
   - "**/*.{ts,tsx,mts,cts}"
 ---
 
-# TypeScript & Type Safety
-- **Strict Typing**: Use strict modes. Avoid `any` at all costs. Use `unknown` or explicit generics if needed.
-- **Interfaces over Types**: Prefer `interface` for object shapes and `type` for unions, intersections, or primitives.
-- **Explicit Returns**: Always declare return types for functions, especially public APIs and complex logic.
-- **Discriminated Unions**: Use discriminated unions for complex state or API responses to ensure exhaustive checks.
-- **Type Guards**: Use custom type guards (`isX(val): val is X`) to narrow down types in conditionals.
-- **Runtime Validation**: Use validation libraries (e.g., Zod, Valibot) for runtime type checking of external data (API, forms, user input).
-- **Utility Types**: Leverage built-in utility types like `Partial`, `Pick`, `Omit`, and `Record` to avoid duplication.
-- **No Casts**: Avoid `as` type assertions unless absolutely necessary (e.g., third-party library limitations). Prefer narrowing.
+# TypeScript
+
+- Keep `strict` on. No `any`: use `unknown` and narrow it, or a generic.
+- Narrow instead of casting. `as` is acceptable only for a third-party type that cannot be expressed otherwise; prefer type guards (`isOrder(value): value is Order`) and `satisfies` to check a literal against a type without widening it.
+- Model state with discriminated unions so every branch is checked; an exhaustive `switch` ends with a `never` check.
+- `interface` for object shapes, `type` for unions, intersections and mapped types. Derive related types with `Pick`, `Omit` and `Partial` instead of duplicating them.
+- Declare return types on exported functions and on any function whose inferred type would be non-obvious.
+- Parse external data (API responses, forms, env, JSON files) with the project's schema library at the boundary, then trust the inferred type inside.
+- ES modules only, with `import type` for type-only imports. Prefer `const`, `async`/`await` and array methods; no `var`, no enums when a union of string literals does the job.

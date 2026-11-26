@@ -10,10 +10,11 @@ paths:
   - "**/*store*.go"
 ---
 
-# Database Rules
-- **Non-Destructive**: NEVER drop tables or delete columns in migrations without explicit permission. Always favor additive changes or renaming.
-- **Go Data Access (sqlc)**: Use raw SQL with sqlc. Queries live in `.sql` files; sqlc generates typed Go code. Never hand-edit generated files. Run `sqlc generate` after changing queries or schema. No GORM.
-- **TypeScript Data Access**: Use the project's ORM (Prisma or Drizzle) and follow its rule file.
-- **N+1 Queries**: Never issue per-row queries in a loop. Prefer JOINs or batched queries.
-- **Indexing**: Proactively suggest indexes for columns that are frequently queried or used in `JOIN` and `WHERE` clauses.
-- **Transactions**: When performing multiple related writes in Golang, ALWAYS wrap them in a database transaction and ensure rollbacks on errors.
+# Databases
+
+- Migrations are additive. Dropping a table or a column, or rewriting data, needs my explicit approval; prefer adding the new shape, migrating reads and writes, then removing the old one in a later migration.
+- Go data access uses sqlc: queries live in `.sql` files, sqlc generates typed code that is never edited by hand, and `sqlc generate` runs after any change to queries or schema. No GORM.
+- TypeScript data access uses the project's ORM (Prisma or Drizzle) and follows its rule file.
+- No query inside a loop over rows. Use a join, a `WHERE id = ANY(...)` or the ORM's batched loading.
+- Several related writes go in one transaction, rolled back on any error.
+- When a query filters, joins or sorts on a column, check that an index covers it and add one in the migration if not.

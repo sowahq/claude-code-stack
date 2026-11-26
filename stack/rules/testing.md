@@ -2,13 +2,21 @@
 paths:
   - "**/*_test.go"
   - "**/*.rs"
-  - "**/*.{test,spec}.{ts,js,mts,mjs}"
+  - "**/*.{test,spec}.{ts,tsx,js,mts,mjs}"
   - "**/tests/**"
   - "**/__tests__/**"
 ---
 
-# Testing Rules
-- **Golang Testing**: Strictly use Table-Driven Tests (with slices of anonymous structs) for Go unit tests. It is the idiomatic Go way. Use the standard `testing` package.
-- **Rust Testing**: Use `#[cfg(test)]` modules with `#[test]`. Table-driven style via arrays of cases iterated in the test. Run with `cargo test`.
-- **Svelte Testing**: Use Vitest for unit tests and component tests.
-- **No Flakes**: Do not write tests that depend on exact timing (`time.Sleep`). Use proper wait groups in Go or `await` patterns in TS.
+# Testing
+
+- Test behaviour through the public surface, not implementation details: a refactor that keeps behaviour must not break a test.
+- Every bug fix comes with a test that fails before the fix and passes after it.
+- Mock only the boundaries you do not own (network, clock, filesystem, third-party APIs). Use the real code for everything inside the project.
+- One reason to fail per test, and a name that states the scenario and the expected result.
+- No sleeps or wall-clock timing. Wait on a signal: a `sync.WaitGroup` or channel in Go, an awaited promise in TypeScript, an injected clock.
+- Use the project's existing runner and helpers before adding a new one.
+
+## Per language
+- Go: table-driven tests with a slice of named cases run through `t.Run`, standard `testing` package. Run with `go test -race ./...`.
+- Rust: `#[cfg(test)]` modules with `#[test]`, cases as an array iterated in the test. Run with `cargo test`.
+- TypeScript and Svelte: Vitest for unit and component tests unless the project already uses another runner.
