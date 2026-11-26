@@ -1,0 +1,11 @@
+{
+  "name": "code-stack",
+  "owner": { "name": "szerookii" },
+  "plugins": [
+    {
+      "name": "tsgo-lsp",
+      "source": "./plugins/tsgo-lsp",
+      "description": "TypeScript and JavaScript code intelligence through the native TypeScript 7 language server (tsc --lsp)."
+    }
+  ]
+}
