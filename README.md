@@ -1,4 +1,3 @@
-| Plugins | `claude plugin install` | `gopls-lsp`, `rust-analyzer-lsp`, `typescript-lsp`, `frontend-design` (official marketplace), `i-have-adhd` with its always-on flag. Plugins you already had are never reinstalled or removed. |
 # claude-code-stack
 
 My personal [Claude Code](https://code.claude.com/docs) configuration, and a cross-platform installer for it (macOS, Linux, Windows).
@@ -39,6 +38,7 @@ From a clone: `node dist/cli.mjs [command] [options]`.
 | `src/hooks/` (compiled to `dist/hooks/`) | `hooks/claude-code-stack/` | One PreToolUse guard for Bash and PowerShell, written in Node with no `jq` or bash dependency. |
 | `stack/settings.json` | `settings.json` | Merged. Keys you already set are never overridden. |
 | MCP servers | `claude mcp add` | Svelte, Ark UI, Figma (figma-mcp-go), Todoist. Wrapped in `cmd /c` on Windows. |
+| Plugins | `claude plugin install` | `gopls-lsp`, `rust-analyzer-lsp`, `typescript-lsp`, `frontend-design` (official marketplace), `i-have-adhd` with its always-on flag. Plugins you already had are never reinstalled or removed. |
 
 Optional tools offered on global installs: [rtk](https://github.com/rtk-ai/rtk) (needs cargo).
 
