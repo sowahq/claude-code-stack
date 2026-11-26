@@ -41,6 +41,8 @@ export interface Plugin {
     binary?: string;
     /** Lowest major version of `binary` the plugin works with, read from `binary --version`. */
     binaryMinMajor?: number;
+    /** Package spec the installer installs globally when `binary` is missing or too old. */
+    binaryPackage?: string;
     /** File the plugin reads from the user config dir to enable itself. */
     globalFlag?: PluginFlag;
 }
@@ -88,7 +90,7 @@ const STACK_MARKETPLACE = { marketplace: 'code-stack', source: 'sowahq/claude-co
 export const PLUGINS: Plugin[] = [
     { name: 'gopls-lsp', ...OFFICIAL, label: 'gopls-lsp: Go definitions, references and diagnostics (needs gopls)', binary: 'gopls' },
     { name: 'rust-analyzer-lsp', ...OFFICIAL, label: 'rust-analyzer-lsp: Rust code intelligence (needs rust-analyzer)', binary: 'rust-analyzer' },
-    { name: 'tsgo-lsp', ...STACK_MARKETPLACE, label: 'tsgo-lsp: TS/JS code intelligence from the native TypeScript 7 server (needs tsc 7 on PATH)', binary: 'tsc', binaryMinMajor: 7 },
+    { name: 'tsgo-lsp', ...STACK_MARKETPLACE, label: 'tsgo-lsp: TS/JS code intelligence from the native TypeScript 7 server (needs tsc 7 on PATH)', binary: 'tsc', binaryMinMajor: 7, binaryPackage: 'typescript@7' },
     { name: 'frontend-design', ...OFFICIAL, label: 'frontend-design: distinctive UI design guidance' },
     {
         name: 'i-have-adhd',

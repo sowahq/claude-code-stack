@@ -4,6 +4,7 @@ import type { CliOptions } from './args.mts';
 import { defaultSelection, desiredFiles, HOOK_CHECKS, loadCatalog, MCP_SERVERS, PLUGINS, withNewComponents } from './catalog.mts';
 import type { Catalog, Selection } from './catalog.mts';
 import { withImport } from './claude-md.mts';
+import { which } from './exec.mts';
 import { installExtras, missingExtras } from './extras.mts';
 import { readText } from './fsx.mts';
 import { color, log } from './log.mts';
@@ -13,6 +14,8 @@ import { addServer, detectConfiguredServers, removeServer } from './mcp.mts';
 import type { Target } from './paths.mts';
 import { changesDisk, planFiles, stripLegacyHooks } from './plan.mts';
 import { detectPlugins, enablePlugin, uninstallPlugin } from './plugins.mts';
+import { detectPackageManager, globalInstallCommand, installRuntime, planRuntimes } from './toolchain.mts';
+import type { RuntimeAction } from './toolchain.mts';
 import { confirm, selectMany } from './prompt.mts';
 import type { Choice } from './prompt.mts';
 import { buildSettingsTemplate, deepEqual, mergeOwned, readSettings, removeOwned, serializeSettings } from './settings.mts';
@@ -59,6 +62,20 @@ const promptSelection = async (catalog: Catalog, initial: Selection, foreignServ
     ),
 });
 
+/** Prints what will happen to a plugin's runtime binary. */
+const describeRuntime = (runtime: RuntimeAction, nonInteractive: boolean): void => {
+    const need = `${runtime.binary} ${runtime.minMajor}+ for ${runtime.plugin}`;
+    if (runtime.manager === null) {
+        log.warn(`${need}: no pnpm, bun or npm found, install ${runtime.spec} globally yourself`);
+        return;
+    }
+    const { command, args } = globalInstallCommand(runtime.manager, runtime.spec);
+    const commandLine = [command, ...args].join(' ');
+    if (runtime.foundMajor === null) log.info(`${need}: install with ${commandLine}`);
+    else if (nonInteractive) log.warn(`${need}: found ${runtime.binary} ${runtime.foundMajor}, left untouched in --yes mode; run ${commandLine} to replace it`);
+    else log.info(`${need}: replace ${runtime.binary} ${runtime.foundMajor} with ${commandLine}`);
+};
+
 /** Installs or updates the stack. */
 export const install = async (target: Target, options: CliOptions): Promise<void> => {
     const catalog = loadCatalog();
@@ -101,6 +118,9 @@ export const install = async (target: Target, options: CliOptions): Promise<void
     const mcpToRemove = [...stackServers].filter((name) => !selection.mcp.includes(name) && configured?.has(name));
     const pluginsToEnable = plugins === null ? [] : selectedPlugins().filter((name) => !presentPlugins.has(name));
     const pluginsToRemove = [...stackPlugins].filter((name) => !selectedPlugins().includes(name) && (plugins?.enabled.has(name) || plugins?.disabled.has(name)));
+    const manager = detectPackageManager(process.env.npm_config_user_agent, (candidate) => which(candidate) !== null);
+    const runtimes = planRuntimes(PLUGINS, selectedPlugins(), manager);
+    const runtimesToInstall = runtimes.filter((runtime) => runtime.manager !== null && (runtime.foundMajor === null || !options.yes));
 
     log.step(`Plan (${target.scope}: ${target.base})`);
     printFileActions(actions);
@@ -110,6 +130,7 @@ export const install = async (target: Target, options: CliOptions): Promise<void
     for (const name of mcpToRemove) log.info(`MCP ${name}: remove`);
     for (const name of pluginsToEnable) log.info(`Plugin ${name}: ${plugins?.disabled.has(name) ? 'enable' : 'install'} (${target.mcpScope} scope)`);
     for (const name of pluginsToRemove) log.info(`Plugin ${name}: uninstall`);
+    for (const runtime of runtimes) describeRuntime(runtime, options.yes);
 
     const pending =
         actions.some(changesDisk) ||
@@ -118,7 +139,8 @@ export const install = async (target: Target, options: CliOptions): Promise<void
         mcpToAdd.length > 0 ||
         mcpToRemove.length > 0 ||
         pluginsToEnable.length > 0 ||
-        pluginsToRemove.length > 0;
+        pluginsToRemove.length > 0 ||
+        runtimesToInstall.length > 0;
     if (options.dryRun) {
         log.plain(color.dim('\nDry run: nothing was changed.'));
         return;
@@ -150,6 +172,10 @@ export const install = async (target: Target, options: CliOptions): Promise<void
         });
         for (const name of pluginsToRemove) {
             if (uninstallPlugin(name, target.mcpScope, target.root)) log.success(`Plugin ${name} uninstalled`);
+        }
+        for (const runtime of runtimesToInstall) {
+            if (installRuntime(runtime)) log.success(`${runtime.binary} ${runtime.minMajor} installed for ${runtime.plugin}`);
+            else log.error(`${runtime.binary} ${runtime.minMajor}+ is still not on PATH for ${runtime.plugin}: open a new shell, or check the ${runtime.manager ?? ''} global bin directory`);
         }
 
         writeManifest(target.base, {

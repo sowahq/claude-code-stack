@@ -20,7 +20,7 @@ const STACK_MARKETPLACE = { marketplace: 'code-stack', source: 'sowahq/claude-co
 export const PLUGINS = [
     { name: 'gopls-lsp', ...OFFICIAL, label: 'gopls-lsp: Go definitions, references and diagnostics (needs gopls)', binary: 'gopls' },
     { name: 'rust-analyzer-lsp', ...OFFICIAL, label: 'rust-analyzer-lsp: Rust code intelligence (needs rust-analyzer)', binary: 'rust-analyzer' },
-    { name: 'tsgo-lsp', ...STACK_MARKETPLACE, label: 'tsgo-lsp: TS/JS code intelligence from the native TypeScript 7 server (needs tsc 7 on PATH)', binary: 'tsc', binaryMinMajor: 7 },
+    { name: 'tsgo-lsp', ...STACK_MARKETPLACE, label: 'tsgo-lsp: TS/JS code intelligence from the native TypeScript 7 server (needs tsc 7 on PATH)', binary: 'tsc', binaryMinMajor: 7, binaryPackage: 'typescript@7' },
     { name: 'frontend-design', ...OFFICIAL, label: 'frontend-design: distinctive UI design guidance' },
     {
         name: 'i-have-adhd',

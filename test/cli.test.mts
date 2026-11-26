@@ -19,10 +19,20 @@ const freshDir = (name: string): string => {
     return dir;
 };
 
+const writeShim = (dir: string, name: string, script: string): void => {
+    if (process.platform === 'win32') fs.writeFileSync(path.join(dir, `${name}.cmd`), `@"${process.execPath}" "${script}" %*\r\n`);
+    else fs.writeFileSync(path.join(dir, name), `#!/bin/sh\nexec "${process.execPath}" "${script}" "$@"\n`, { mode: 0o755 });
+};
+
+const NODE_BIN = fs.mkdtempSync(path.join(os.tmpdir(), 'ccs-node-bin-'));
+if (process.platform === 'win32') fs.writeFileSync(path.join(NODE_BIN, 'node.cmd'), `@"${process.execPath}" %*\r\n`);
+else fs.symlinkSync(process.execPath, path.join(NODE_BIN, 'node'));
+after(() => fs.rmSync(NODE_BIN, { recursive: true, force: true }));
+
 const isolatedEnv = (configDir: string): NodeJS.ProcessEnv => ({
-    ...Object.fromEntries(Object.entries(process.env).filter(([key]) => key.toUpperCase() !== 'PATH')),
+    ...Object.fromEntries(Object.entries(process.env).filter(([key]) => key.toUpperCase() !== 'PATH' && key !== 'npm_config_user_agent')),
     CLAUDE_CONFIG_DIR: configDir,
-    PATH: path.dirname(process.execPath),
+    PATH: NODE_BIN,
     NO_COLOR: '1',
 });
 
@@ -178,20 +188,15 @@ describe('cli project scope', () => {
     });
 });
 
-const fakeClaudeBin = (): string => {
-    const bin = freshDir('fake-bin');
-    const script = fileURLToPath(new URL('./fixtures/fake-claude.mts', import.meta.url));
-    if (process.platform === 'win32') {
-        fs.writeFileSync(path.join(bin, 'claude.cmd'), `@"${process.execPath}" "${script}" %*\r\n`);
-    } else {
-        fs.writeFileSync(path.join(bin, 'claude'), `#!/bin/sh\nexec "${process.execPath}" "${script}" "$@"\n`, { mode: 0o755 });
-    }
+const fakeClaudeBin = (name: string): string => {
+    const bin = freshDir(`${name}-bin`);
+    writeShim(bin, 'claude', fileURLToPath(new URL('./fixtures/fake-claude.mts', import.meta.url)));
     return bin;
 };
 
 describe('cli plugins (fake claude CLI)', () => {
     const dir = freshDir('plugins');
-    const bin = fakeClaudeBin();
+    const bin = fakeClaudeBin('fake-1');
     const logFile = path.join(scratch, 'fake-claude.log');
     const installed = [
         { id: 'i-have-adhd@i-have-adhd', scope: 'user', enabled: true },
@@ -199,7 +204,7 @@ describe('cli plugins (fake claude CLI)', () => {
     ];
     const env = (): NodeJS.ProcessEnv => ({
         ...isolatedEnv(dir),
-        PATH: [bin, path.dirname(process.execPath)].join(path.delimiter),
+        PATH: [bin, NODE_BIN].join(path.delimiter),
         FAKE_CLAUDE_LOG: logFile,
         FAKE_CLAUDE_PLUGINS: JSON.stringify(installed),
     });
@@ -242,11 +247,11 @@ describe('cli plugins (fake claude CLI)', () => {
 describe('cli retires plugins the stack no longer ships', () => {
     it('uninstalls typescript-lsp it installed and installs tsgo-lsp instead', () => {
         const dir = freshDir('retired-plugin');
-        const bin = fakeClaudeBin();
+        const bin = fakeClaudeBin('fake-2');
         const logFile = path.join(scratch, 'retired-plugin.log');
         const env = (plugins: unknown[]): NodeJS.ProcessEnv => ({
             ...isolatedEnv(dir),
-            PATH: [bin, path.dirname(process.execPath)].join(path.delimiter),
+            PATH: [bin, NODE_BIN].join(path.delimiter),
             FAKE_CLAUDE_LOG: logFile,
             FAKE_CLAUDE_PLUGINS: JSON.stringify(plugins),
         });
@@ -265,6 +270,43 @@ describe('cli retires plugins the stack no longer ships', () => {
         const after = list(get(readJson(manifestFile), 'plugins')).map(text);
         assert.ok(!after.includes('typescript-lsp'));
         assert.ok(after.includes('tsgo-lsp'));
+    });
+});
+
+describe('cli installs the TypeScript 7 runtime for tsgo-lsp', () => {
+    const setup = (name: string): { dir: string; bin: string; logFile: string; env: NodeJS.ProcessEnv } => {
+        const dir = freshDir(name);
+        const bin = fakeClaudeBin('fake-3');
+        writeShim(bin, 'pnpm', fileURLToPath(new URL('./fixtures/fake-package-manager.mts', import.meta.url)));
+        const logFile = path.join(scratch, `${name}-pm.log`);
+        const env = { ...isolatedEnv(dir), PATH: [bin, NODE_BIN].join(path.delimiter), npm_config_user_agent: 'pnpm/10.20.0 npm/? node/v24.0.0', FAKE_PM_LOG: logFile, FAKE_PM_BIN: bin };
+        return { dir, bin, logFile, env };
+    };
+
+    it('installs typescript@7 with the launching package manager when tsc is missing', () => {
+        const { bin, logFile, env } = setup('runtime-missing');
+        const result = spawnSync(process.execPath, [CLI, 'install', '--global', '--yes'], { encoding: 'utf8', env });
+        assert.equal(result.status, 0, result.stderr + result.stdout);
+        assert.deepEqual(fs.readFileSync(logFile, 'utf8').trim().split('\n').map((line) => list(JSON.parse(line)).map(text)), [['add', '--global', 'typescript@7']]);
+        assert.match(result.stdout, /tsc 7 installed for tsgo-lsp/);
+        assert.ok(fs.readdirSync(bin).some((file) => file.startsWith('tsc')));
+    });
+
+    it('leaves an older tsc untouched in --yes mode and says how to replace it', () => {
+        const { bin, logFile, env } = setup('runtime-old');
+        writeShim(bin, 'tsc', fileURLToPath(new URL('./fixtures/fake-tsc5.mts', import.meta.url)));
+        const result = spawnSync(process.execPath, [CLI, 'install', '--global', '--yes'], { encoding: 'utf8', env });
+        assert.equal(result.status, 0, result.stderr + result.stdout);
+        assert.ok(!fs.existsSync(logFile));
+        assert.match(result.stdout, /found tsc 5, left untouched in --yes mode; run pnpm add --global typescript@7/);
+    });
+
+    it('only warns when no package manager is available', () => {
+        const dir = freshDir('runtime-none');
+        const bin = fakeClaudeBin('fake-4');
+        const result = spawnSync(process.execPath, [CLI, 'install', '--global', '--yes'], { encoding: 'utf8', env: { ...isolatedEnv(dir), PATH: [bin, NODE_BIN].join(path.delimiter) } });
+        assert.equal(result.status, 0, result.stderr + result.stdout);
+        assert.match(result.stdout, /no pnpm, bun or npm found, install typescript@7 globally yourself/);
     });
 });
 

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { PLUGINS } from './catalog.mjs';
 import { hasImport } from './claude-md.mjs';
 import { isWindows, run, which } from './exec.mjs';
+import { binaryMajor } from './toolchain.mjs';
 import { hashFile, readText } from './fsx.mjs';
 import { color, errorMessage, log } from './log.mjs';
 import { readManifest } from './manifest.mjs';
@@ -17,11 +18,6 @@ const MIN_NODE = [22, 18];
 export const meetsMinimumNode = (version) => {
     const [major = 0, minor = 0] = version.split('.').map(Number);
     return major > MIN_NODE[0] || (major === MIN_NODE[0] && minor >= MIN_NODE[1]);
-};
-/** Reads the first major version number printed by `binary --version`. */
-export const parseMajorVersion = (output) => {
-    const match = /(\d+)\.\d+/.exec(output);
-    return match?.[1] === undefined ? null : Number(match[1]);
 };
 /** Lists rule files whose frontmatter Claude Code ignores, which makes them load in every session. */
 export const rulesWithIgnoredFrontmatter = (rulesDir) => fs.existsSync(rulesDir)
@@ -113,7 +109,7 @@ export const diagnose = (target) => {
             add('warn', `${name}: ${binary} not on PATH, the plugin has no server to talk to`);
             continue;
         }
-        const major = minMajor === undefined ? null : parseMajorVersion(run(binary, ['--version']).stdout);
+        const major = minMajor === undefined ? null : binaryMajor(binary);
         if (minMajor !== undefined && (major === null || major < minMajor))
             add('warn', `${name}: ${binary} ${major ?? 'unknown version'} found, ${minMajor}+ required`);
         else

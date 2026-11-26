@@ -9,7 +9,9 @@ import type { Catalog, McpServer, Selection } from '../src/catalog.mts';
 import { parseArgs } from '../src/args.mts';
 import type { CliOptions } from '../src/args.mts';
 import { resolveTarget } from '../src/paths.mts';
-import { meetsMinimumNode, parseMajorVersion } from '../src/doctor.mts';
+import { meetsMinimumNode } from '../src/doctor.mts';
+import { detectPackageManager, globalInstallCommand, parseMajorVersion } from '../src/toolchain.mts';
+import type { PackageManager } from '../src/toolchain.mts';
 
 describe('mergeOwned / removeOwned', () => {
     const cases = [
@@ -226,5 +228,34 @@ describe('parseMajorVersion', () => {
     ];
     for (const { output, want } of cases) {
         it(`${JSON.stringify(output)} -> ${want}`, (): void => assert.equal(parseMajorVersion(output), want));
+    }
+});
+
+describe('detectPackageManager', () => {
+    const cases: ReadonlyArray<{ name: string; userAgent: string | undefined; available: PackageManager[]; want: PackageManager | null }> = [
+        { name: 'the launcher wins when available', userAgent: 'bun/1.3.4 npm/? node/v24.0.0 darwin arm64', available: ['pnpm', 'bun', 'npm'], want: 'bun' },
+        { name: 'npx launches with npm', userAgent: 'npm/11.6.0 node/v24.0.0 darwin arm64 workspaces/false', available: ['pnpm', 'npm'], want: 'npm' },
+        { name: 'pnpm dlx launches with pnpm', userAgent: 'pnpm/10.20.0 npm/? node/v24.0.0 linux x64', available: ['pnpm', 'npm'], want: 'pnpm' },
+        { name: 'falls back to pnpm, then bun, then npm', userAgent: undefined, available: ['bun', 'npm'], want: 'bun' },
+        { name: 'ignores a launcher that is not installed', userAgent: 'pnpm/10.20.0', available: ['npm'], want: 'npm' },
+        { name: 'yarn is not supported for global installs', userAgent: 'yarn/4.5.0', available: ['npm'], want: 'npm' },
+        { name: 'nothing available', userAgent: undefined, available: [], want: null },
+    ];
+    for (const { name, userAgent, available, want } of cases) {
+        it(name, (): void => assert.equal(detectPackageManager(userAgent, (manager) => available.includes(manager)), want));
+    }
+});
+
+describe('globalInstallCommand', () => {
+    const cases: ReadonlyArray<{ manager: PackageManager; want: string[] }> = [
+        { manager: 'npm', want: ['npm', 'install', '--global', 'typescript@7'] },
+        { manager: 'pnpm', want: ['pnpm', 'add', '--global', 'typescript@7'] },
+        { manager: 'bun', want: ['bun', 'add', '--global', 'typescript@7'] },
+    ];
+    for (const { manager, want } of cases) {
+        it(manager, (): void => {
+            const { command, args } = globalInstallCommand(manager, 'typescript@7');
+            assert.deepEqual([command, ...args], want);
+        });
     }
 });
