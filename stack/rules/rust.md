@@ -1,3 +1,8 @@
+---
+paths:
+  - "**/*.rs"
+  - "**/Cargo.toml"
+---
 # Rust Rules
 - **Error Handling**: Return `Result<T, E>` and propagate with `?`. NEVER `unwrap()`/`expect()` in production paths (tests and `main` setup excepted, and only when the invariant is documented). Use `thiserror` for library errors, `anyhow` for application-level errors.
 - **No `unsafe`**: Avoid `unsafe` blocks. If truly required, isolate them, document the invariant being upheld with a `// SAFETY:` comment, and keep the block minimal.

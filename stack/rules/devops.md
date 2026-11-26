@@ -1,6 +1,11 @@
 ---
-globs: ["**/Dockerfile*", "**/docker-compose.yml", ".github/workflows/**"]
-description: DevOps, Docker, and CI/CD best practices
+paths:
+  - "**/Dockerfile*"
+  - "**/*.dockerfile"
+  - "**/.dockerignore"
+  - "**/{docker-,}compose*.{yml,yaml}"
+  - "**/.github/workflows/**"
+  - "**/.gitlab-ci.yml"
 ---
 
 # DevOps & Docker Rules

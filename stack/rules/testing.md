@@ -1,6 +1,10 @@
 ---
-globs: ["**/*_test.go", "**/*.test.ts", "**/*.spec.ts", "e2e/**"]
-description: Unit and Integration Testing conventions
+paths:
+  - "**/*_test.go"
+  - "**/*.rs"
+  - "**/*.{test,spec}.{ts,js,mts,mjs}"
+  - "**/tests/**"
+  - "**/__tests__/**"
 ---
 
 # Testing Rules

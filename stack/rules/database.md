@@ -1,6 +1,13 @@
 ---
-globs: ["**/*.sql", "db/migrations/**", "internal/db/**"]
-description: Database schema, migrations, and query rules
+paths:
+  - "**/*.sql"
+  - "**/migrations/**"
+  - "**/sqlc.{yaml,yml,json}"
+  - "**/*.prisma"
+  - "**/drizzle.config.*"
+  - "**/db/**"
+  - "**/*repository*.go"
+  - "**/*store*.go"
 ---
 
 # Database Rules

@@ -1,6 +1,10 @@
 ---
-globs: ["**/*.svelte", "src/**/*.ts", "tailwind.config.js", "app.css"]
-description: Svelte best practices, styling, and UI/UX rules
+paths:
+  - "**/*.svelte"
+  - "**/*.svelte.{ts,js}"
+  - "**/svelte.config.*"
+  - "**/tailwind.config.*"
+  - "**/src/routes/**"
 ---
 
 # Styling & UI Frameworks

@@ -1,6 +1,9 @@
 ---
-globs: ["**/schema.ts", "**/drizzle/**/*", "drizzle.config.ts"]
-description: Drizzle ORM schema definition and migration rules
+paths:
+  - "**/drizzle.config.*"
+  - "**/drizzle/**"
+  - "**/db/schema/**"
+  - "**/db/schema.ts"
 ---
 
 # Drizzle Rules

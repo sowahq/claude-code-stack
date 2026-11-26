@@ -1,6 +1,8 @@
 ---
-globs: ["**/*.go"]
-description: Standards and rules for the Golang backend
+paths:
+  - "**/*.go"
+  - "**/go.mod"
+  - "**/go.sum"
 ---
 
 # Golang Rules

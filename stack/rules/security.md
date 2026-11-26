@@ -1,8 +1,3 @@
----
-globs: ["**/*", "!.git/**"]
-description: Security standards to prevent vulnerabilities and data leaks
----
-
 # Security Rules
 - **Secret Management**: NEVER hardcode API keys, passwords, or tokens. Use environment variables and ensure `.env` files are in `.gitignore`.
 - **Input Validation**: Systematically validate all user inputs at the boundary. Use validation libraries (e.g., Zod, Valibot) for TypeScript and robust validation tags/logic for Go.

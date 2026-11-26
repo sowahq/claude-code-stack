@@ -1,6 +1,6 @@
 ---
-globs: ["**/*.ts", "**/*.tsx"]
-description: TypeScript coding standards and type safety rules
+paths:
+  - "**/*.{ts,tsx,mts,cts}"
 ---
 
 # TypeScript & Type Safety

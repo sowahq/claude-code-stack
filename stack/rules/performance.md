@@ -1,6 +1,6 @@
 ---
-globs: ["**/*.{ts,svelte,go}", "src/**/*", "internal/**/*"]
-description: Optimization rules for bundle size, query speed, and resource management
+paths:
+  - "**/*.{go,rs,ts,tsx,js,jsx,mjs,svelte,sql}"
 ---
 
 # Performance Rules

@@ -1,6 +1,7 @@
 ---
-globs: ["**/schema.prisma", "**/prisma/**/*", "src/lib/prisma.ts"]
-description: Prisma ORM schema management and client usage best practices
+paths:
+  - "**/*.prisma"
+  - "**/prisma/**"
 ---
 
 # Prisma Rules

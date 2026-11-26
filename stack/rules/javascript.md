@@ -1,6 +1,6 @@
 ---
-globs: ["**/*.js", "**/*.mjs", "**/*.cjs"]
-description: JavaScript coding standards, modern ES6+ syntax, and clean code rules
+paths:
+  - "**/*.{js,jsx,mjs,cjs}"
 ---
 
 # JavaScript Rules
