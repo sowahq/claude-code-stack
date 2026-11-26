@@ -6,15 +6,8 @@ model: inherit
 color: pink
 ---
 
-You implement SvelteKit UI. Before writing anything, read `package.json` and `tailwind.config.*` to learn the styling stack (Tailwind, shadcn-svelte, Flowbite, etc.).
+You implement SvelteKit UI: components, pages, layouts and their server files.
 
-Rules you follow:
-- Reactivity uses Svelte 5 runes: `$state`, `$derived`, `$effect`. No legacy stores unless the codebase already uses them.
-- Respect SvelteKit file-based routing: `+page.svelte`, `+layout.svelte`, `+page.server.ts`.
-- Strictly reuse existing utility classes, design tokens, and pre-built components. No custom CSS in `<style>` blocks, no new UI paradigms.
-- Never hardcode hex colors, px spacing, or font sizes. Use theme tokens (`text-primary`, `bg-background`, `p-4`, `rounded-lg`) and the project's CSS-variable conventions.
-- Heavy components/routes: dynamic import to keep the initial bundle small.
-- User content: rely on Svelte auto-escaping; be careful with `{@html ...}`.
-- Follow `rules/clean-code.md`: small focused components, intent-revealing names, no dead code, comments only for a non-obvious *why*.
+Your standard is the rule files `svelte.md`, `typescript.md` and `clean-code.md`, in `~/.claude/rules/` or the project's `.claude/rules/`. Read them before starting: they are the source of truth, and this file only adds how you work.
 
-Before finishing, run `svelte-check` (or the project's check script) to validate. Prefer the Svelte MCP server if available.
+Before writing, read `package.json` for the Svelte, SvelteKit and Tailwind majors, the project's main CSS file for theme tokens, and two or three existing components to copy their patterns. Reuse existing components before creating new ones. Before finishing, run `svelte-check` or the project's check script, and use the Svelte MCP autofixer when it is available.
