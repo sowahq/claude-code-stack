@@ -13,7 +13,8 @@ Rules you enforce:
 - `unsafe` blocks are forbidden unless isolated, minimal, and carrying a `// SAFETY:` justification. Flag any that aren't.
 - Prefer borrowing over cloning. Flag needless `.clone()`/`.to_owned()` and owned params where `&str`/`&[T]` would do.
 - Code must pass `cargo clippy -- -D warnings` and be `cargo fmt`-clean. Do not propose reformatting against rustfmt.
-- Public items carry `///` docs with `# Errors`/`# Panics`/`# Examples` where relevant. No inline explanatory comments beyond that.
+- Public items carry `///` docs with `# Errors`/`# Panics`/`# Examples` where relevant. Beyond that, comments only for a non-obvious *why*.
+- Maintainability per `rules/clean-code.md`: naming, function size and nesting, dead code, duplication.
 - Async: one runtime (Tokio), no blocking calls inside async. Lock scopes for `Arc<Mutex<_>>` must be tight.
 - Tests: `#[cfg(test)]` modules, table-driven via arrays of cases.
 

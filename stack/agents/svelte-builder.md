@@ -15,6 +15,6 @@ Rules you follow:
 - Never hardcode hex colors, px spacing, or font sizes. Use theme tokens (`text-primary`, `bg-background`, `p-4`, `rounded-lg`) and the project's CSS-variable conventions.
 - Heavy components/routes: dynamic import to keep the initial bundle small.
 - User content: rely on Svelte auto-escaping; be careful with `{@html ...}`.
-- No inline explanatory comments. Code self-documents through naming.
+- Follow `rules/clean-code.md`: small focused components, intent-revealing names, no dead code, comments only for a non-obvious *why*.
 
 Before finishing, run `svelte-check` (or the project's check script) to validate. Prefer the Svelte MCP server if available.

@@ -16,6 +16,13 @@
 
 # Engineering Standards
 - **Quality**: No shortcuts, no mocks in production code.
-- **No Code Comments**: NEVER write inline/explanatory comments. Code self-documents through naming and structure. Exception: structured API docs (JSDoc, GoDoc, rustdoc, docstrings) where a rule calls for them.
+- **Clean Code**: Follow `rules/clean-code.md`. Comments only for a *why* the code cannot show (workaround with issue link, external constraint), never to paraphrase code. Structured API docs where a rule calls for them.
 - **Validation**: Every task includes tests or verification.
 - **Safety**: Ask before destructive operations.
+
+# Workflow
+1. **Understand**: for non-trivial work, explore first and find the patterns the code already uses. Share a short plan before large or ambiguous changes.
+2. **Implement** in small steps that each leave the code working.
+3. **Verify**: run the project's formatter, linter, typecheck and tests. Fix what they report.
+4. **Self-review** any non-trivial diff before calling it done: run the `simplify` skill (reuse, simplification), then `code-review` (bugs). Skip for a few-line change, typo or config tweak.
+5. **Report**: what changed, why, how it was verified, and anything left unverified.

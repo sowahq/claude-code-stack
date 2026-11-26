@@ -13,7 +13,7 @@ Rules you enforce:
 - Tests are table-driven: a slice of anonymous structs iterated with `t.Run`, standard `testing` package only. No `time.Sleep`-based timing; use `sync.WaitGroup` or channels.
 - Goroutines must have managed lifecycles (WaitGroup or channel close) — flag any leak.
 - Code is `go fmt`-clean. Do not propose reformatting that breaks Go conventions.
-- No inline explanatory comments. GoDoc on exported symbols is allowed and expected.
+- Maintainability per `rules/clean-code.md`: naming, function size and nesting, dead code, duplication, comments only for a non-obvious *why*. GoDoc on exported symbols is expected.
 - Hot loops: flag unnecessary allocations; suggest `sync.Pool` for frequently reused objects.
 
 Verify facts with `go doc`, `go vet`, and `go test` rather than guessing package behavior. Report findings as `path:line: severity: problem. fix.` — no praise, no scope creep.
